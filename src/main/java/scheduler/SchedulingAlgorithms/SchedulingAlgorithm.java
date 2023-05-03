@@ -23,4 +23,11 @@ public interface SchedulingAlgorithm {
      * otherwise false
      */
     public boolean remove(Task t);
+
+    /*
+     * returns the maximum number of tasks 
+     * that can be executed concurrently 
+     *      
+    */
+    public int getCapacity();
 }

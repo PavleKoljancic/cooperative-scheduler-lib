@@ -1,8 +1,9 @@
-package scheduler.SchedulingAlgorithms;
+package scheduler.SchedulingAlgorithms.FIFO;
 
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import scheduler.SchedulingAlgorithms.SchedulingAlgorithm;
 import scheduler.Task.Task;
 import scheduler.Task.State.TaskState;
 
@@ -10,10 +11,11 @@ import scheduler.Task.State.TaskState;
 public class FIFO implements SchedulingAlgorithm {
 
     //Ovdje sam koristio conurrent queue jer je fifo ko stvoren za njega;
-    private ConcurrentLinkedQueue<Task> concurrentLinkedQueue;
+    protected ConcurrentLinkedQueue<Task> concurrentLinkedQueue;
+    protected int capacity;
 
-    public FIFO() 
-    {
+    public FIFO(int capacity) 
+    {   this.capacity = capacity;
         concurrentLinkedQueue = new ConcurrentLinkedQueue<Task>();
     }
 
@@ -35,6 +37,11 @@ public class FIFO implements SchedulingAlgorithm {
     @Override
     public boolean remove(Task t) {
         return this.concurrentLinkedQueue.remove(t);
+    }
+
+    @Override
+    public int getCapacity() {
+        return    this.capacity;
     }
     
 }

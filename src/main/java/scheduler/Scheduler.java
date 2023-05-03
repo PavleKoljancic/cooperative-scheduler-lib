@@ -16,9 +16,9 @@ public class Scheduler implements StateSubscriber {
     private SchedulingAlgorithm schedulingAlgorithm;
     private Timer timer;
 
-    Scheduler(int maxNumberOfTasks, SchedulingAlgorithm schedulingAlgorithm) {
+    Scheduler(SchedulingAlgorithm schedulingAlgorithm) {
         this.schedulingAlgorithm = schedulingAlgorithm;
-        semaphore = new Semaphore(maxNumberOfTasks);
+        semaphore = new Semaphore(schedulingAlgorithm.getCapacity());
         this.timer = new Timer();
     }
 
@@ -26,71 +26,64 @@ public class Scheduler implements StateSubscriber {
 
         boolean result = schedulingAlgorithm.add(t);
         t.addStateSubscriber(this);
-        executeNextTask();
+        if (t.getState() == TaskState.READY)
+            this.executeNextTask();
 
         return result;
     }
 
     public boolean addTask(Task t, Date startDate) {
-        if(startDate!=null)
+        if (startDate != null)
             try {
                 t.pauseTask();
                 boolean result = schedulingAlgorithm.add(t);
                 t.addStateSubscriber(this);
-                if(result)
-                timer.schedule(new TimerTask() {
+                if (result)
+                    timer.schedule(new TimerTask() {
 
-                    @Override
-                    public void run() {
-                        t.unpauseTask();
-                    }
+                        @Override
+                        public void run() {
+                            t.unpauseTask();
+                        }
 
-                }, startDate.getTime());
+                    }, startDate.getTime());
                 return result;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
         return false;
-        }
-    
+    }
+
     public boolean addTask(Task t, Date startDate, Date EndDate) {
-       
-                Boolean result  = addTask(t, startDate);
-                if(result)
-                timer.schedule(new TimerTask() {
 
-                    @Override
-                    public void run() {
-                        if(t.getState()!=TaskState.FINISHED||t.getState()!=TaskState.CANCELLED)
-                            t.cancelTask();
-                    }
+        Boolean result = addTask(t, startDate);
+        if (result)
+            timer.schedule(new TimerTask() {
 
-                }, EndDate);
-                return  result;
+                @Override
+                public void run() {
+                    if (t.getState() != TaskState.FINISHED || t.getState() != TaskState.CANCELLED)
+                        t.cancelTask();
+                }
 
-        }
-    
-    
+            }, EndDate);
+        return result;
+
+    }
 
     @Override
     public synchronized void Inform(Task task, TaskState former, TaskState current) {
-        if (current == TaskState.CANCELLED || current == TaskState.FINISHED) {
-            schedulingAlgorithm.remove(task);
-            task.removeStateSubscriber(this);
-        }
-        if (current == TaskState.READY)
-            this.executeNextTask();
-        if (current == TaskState.PAUSED)
-        {
+
+        if (current == TaskState.PAUSED) {
             this.schedulingAlgorithm.add(task);
             this.semaphore.release();
         }
-            if(current==TaskState.FINISHED||current==TaskState.CANCELLED)
-        {
+        if (current == TaskState.FINISHED || current == TaskState.CANCELLED) {
             this.semaphore.release();
-            this.executeNextTask();
+
         }
+        this.executeNextTask();
     }
 
     private synchronized void executeNextTask() {
@@ -98,7 +91,8 @@ public class Scheduler implements StateSubscriber {
             try {
                 Task task = schedulingAlgorithm.getNextTask();
                 if (task != null)
-                    task.Execute(semaphore);
+                    if (!task.Execute(semaphore))
+                            this.addTask(task);
             } catch (InterruptedException e) {
 
                 e.printStackTrace();

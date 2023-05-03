@@ -1,16 +1,19 @@
-package scheduler.SchedulingAlgorithms;
+package scheduler.SchedulingAlgorithms.Priority;
 
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.PriorityQueue;
+
+import scheduler.SchedulingAlgorithms.SchedulingAlgorithm;
 import scheduler.Task.Task;
 import scheduler.Task.State.TaskState;
 
 public class Priority implements SchedulingAlgorithm {
     //Priority queue nije thread safe
-    PriorityQueue<Task> priorityQueue;
+    protected PriorityQueue<Task> priorityQueue;
+    protected int capacity;
 
-    public Priority() 
+    public Priority(int capacity) 
     {
         this.priorityQueue = new PriorityQueue<Task>(new Comparator<Task>() {
 
@@ -25,6 +28,7 @@ public class Priority implements SchedulingAlgorithm {
             }
             
         });
+        this.capacity = capacity;
     }
     @Override
     public Task getNextTask() {
@@ -54,6 +58,11 @@ public class Priority implements SchedulingAlgorithm {
         synchronized(this) {
         return this.priorityQueue.add(t);
         }
+    }
+    @Override
+    public int getCapacity() {
+        
+        return this.capacity;
     }
 
     

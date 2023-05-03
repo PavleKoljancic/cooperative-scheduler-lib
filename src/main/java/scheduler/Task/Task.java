@@ -12,8 +12,14 @@ public class Task {
 
     private TaskWork work;
     private HashSet<StateSubscriber> stateChangeSubscribers = new HashSet<>();
-    private long maxExecutionTime;
+    private long maxExecutionTime; // If 0 no limit
     private long executionTime;
+    private long timeSlice; // If 0 no Limit
+    private long timeSliceUsed;
+
+    public void setTimeSlice(long timeSlice) {
+        this.timeSlice = timeSlice;
+    }
 
     public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime) throws IllegalArgumentException {
 
@@ -28,6 +34,7 @@ public class Task {
         else
             this.State = TaskState.READY;
         this.work = work;
+        this.timeSlice = 0;
     }
 
     public Task(int priority, boolean wait, TaskWork work) throws IllegalArgumentException {
@@ -57,7 +64,7 @@ public class Task {
     }
 
     public synchronized void pauseTask() throws InterruptedException {
-        if (this.isStateChangePossible()&&!this.work.cancelSignalSent()) {
+        if (this.isStateChangePossible() && !this.work.cancelSignalSent()) {
             if (this.getState() == TaskState.READY) {
                 this.StateChange(TaskState.PAUSED);
             }
@@ -115,27 +122,35 @@ public class Task {
         this.work.join();
     }
 
-    public void Execute(Semaphore schedulerSemaphore) throws InterruptedException {
+    public synchronized boolean Execute(Semaphore schedulerSemaphore) throws InterruptedException {
         if (schedulerSemaphore.tryAcquire())
             synchronized (this) {
                 if (this.getState() == TaskState.READY) {
                     this.StateChange(TaskState.EXECUTING);
+                    this.timeSliceUsed = 0;
                     if (this.work.isCreated())
                         this.work.resume();
                     else
                         this.work.Begin(this);
-
+                    return true;
                 }
 
-                else
-                    schedulerSemaphore.release();
+                schedulerSemaphore.release();
+                return false;
             }
+        return false;
     }
 
-    public void addExecutionTime(long time) {
+     void addExecutionTime(long time) {
         executionTime += time;
+        timeSliceUsed += time;
         if (maxExecutionTime > 0 && executionTime >= maxExecutionTime)
             this.cancelTask();
+        else if (timeSlice > 0 && timeSliceUsed > timeSlice)
+            try {
+                this.work.pause();
+            } catch (InterruptedException e) {
+            }
     }
 
     public Object getResult() {

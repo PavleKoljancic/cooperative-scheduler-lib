@@ -1,12 +1,11 @@
 package scheduler;
 
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import scheduler.SchedulingAlgorithms.FIFO;
-import scheduler.SchedulingAlgorithms.Priority;
+import scheduler.SchedulingAlgorithms.FIFO.FIFO;
+import scheduler.SchedulingAlgorithms.Priority.Priority;
 import scheduler.Task.Task;
 import scheduler.Task.TaskWork;
 
@@ -14,7 +13,7 @@ public class SchedulerTest {
 
     @Test
     public void joinTest1() throws Exception {
-        Scheduler scheduler = new Scheduler(4, new FIFO());
+        Scheduler scheduler = new Scheduler(new FIFO(4));
         TaskWork t1 = new TaskWork() {
 
             int i = 0;
@@ -47,7 +46,7 @@ public class SchedulerTest {
 
     @Test
     public void joinTest2() throws Exception {
-        Scheduler scheduler = new Scheduler(4, new FIFO());
+        Scheduler scheduler = new Scheduler(new FIFO(4));
         TaskWork t1 = new TaskWork() {
 
             int i = 0;
@@ -81,7 +80,7 @@ public class SchedulerTest {
 
     @Test
     public void noStartTest() throws Exception {
-        Scheduler scheduler = new Scheduler(4, new FIFO());
+        Scheduler scheduler = new Scheduler(new FIFO(4));
         TaskWork t1 = new TaskWork() {
 
             int i = 0;
@@ -113,7 +112,7 @@ public class SchedulerTest {
 
     @Test
     public void unPauseTest() throws Exception {
-        Scheduler scheduler = new Scheduler(4, new FIFO());
+        Scheduler scheduler = new Scheduler(new FIFO(4));
         TaskWork t1 = new TaskWork() {
 
             int i = 0;
@@ -176,7 +175,7 @@ public class SchedulerTest {
 
     @Test
     public void maxExecutionTimeTest() throws Exception {
-        Scheduler scheduler = new Scheduler(4, new FIFO());
+        Scheduler scheduler = new Scheduler(new FIFO(4));
         TaskWork t1 = new TaskWork() {
 
             int i = 0;
@@ -212,7 +211,7 @@ public class SchedulerTest {
 
     @Test
     public void manyTasks() throws Exception {
-        Scheduler scheduler = new Scheduler(4, new Priority());
+        Scheduler scheduler = new Scheduler(new Priority(4));
         Task[] tasks = new Task[100];
         for (int i = 0; i < tasks.length; i++) {
             TaskWork t1 = new TaskWork() {
@@ -250,7 +249,7 @@ public class SchedulerTest {
 
     @Test
     public void pauseCancelTest() throws Exception {
-        Scheduler scheduler = new Scheduler(4, new FIFO());
+        Scheduler scheduler = new Scheduler(new FIFO(4));
         TaskWork t1 = new TaskWork() {
 
             int i = 0;
@@ -288,7 +287,7 @@ public class SchedulerTest {
     // te da vidim hoce li ga ovaj rasporediti
     @Test
     public void pauseTaskSemaphoreTest() throws Exception {
-        Scheduler scheduler = new Scheduler(2, new FIFO());
+        Scheduler scheduler = new Scheduler( new FIFO(2));
         Task[] tasks = new Task[4];
         for (int i = 0; i < tasks.length; i++) {
             TaskWork t1 = new TaskWork() {
