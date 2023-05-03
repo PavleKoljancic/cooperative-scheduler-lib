@@ -3,24 +3,35 @@ package scheduler.Task;
 import java.util.HashSet;
 import java.util.concurrent.Semaphore;
 
+import scheduler.Task.State.StateSubscriber;
+import scheduler.Task.State.TaskState;
+
 public class Task {
     private int priority;
-    TaskState State;
-    TaskToken cancelToken;
-    TaskToken pauseToken;
-    TaskExecution taskExecution;
-    HashSet<StateSubscriber> stateChangeSubscribers = new HashSet<>();
-    int iValue = 0;
+    private TaskState State;
 
-    public Task(int priority, boolean wait, TaskExecution taskExecution) {
-        this.cancelToken = new TaskToken(false);
-        this.pauseToken = new TaskToken(false);
+    private TaskWork work;
+    private HashSet<StateSubscriber> stateChangeSubscribers = new HashSet<>();
+    private long maxExecutionTime;
+    private long executionTime;
+
+    public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime) throws Exception {
+
+        this.maxExecutionTime = maxExecutionTime;
+        this.executionTime = 0;
+
+        if (priority < 0)
+            throw new Exception("Priority must be greater or equal to zero.");
         this.priority = priority;
         if (wait)
             this.State = TaskState.PAUSED;
         else
             this.State = TaskState.READY;
-        this.taskExecution = taskExecution;
+        this.work = work;
+    }
+
+    public Task(int priority, boolean wait, TaskWork work) throws Exception {
+        this(priority, wait, work, 0);
     }
 
     public void setPriority(int priority) {
@@ -31,90 +42,101 @@ public class Task {
         return priority;
     }
 
-    public synchronized TaskState getState() {
-        return State;
+    public TaskState getState() {
+        synchronized (this.State) {
+            return State;
+        }
     }
-
 
     public void cancelTask() {
-        synchronized (this.cancelToken) {
-            if(this.State!=TaskState.EXECUTING)
-            this.StateChange(TaskState.CANCELLED);
-            this.cancelToken.setTriggered(true);
-            
+
+        if (this.isStateChangePossible()) {
+            if (this.getState() != TaskState.EXECUTING)
+                this.StateChange(TaskState.CANCELLED);
+            this.work.cancelSignal();
         }
     }
 
-    public void pauseTask() {
-        synchronized (this.pauseToken) {
-            if (!pauseToken.isTriggered())
-                this.pauseToken.setTriggered(true);
+    public synchronized void pauseTask() throws InterruptedException {
+        if (this.isStateChangePossible()) {
+            if (this.getState() == TaskState.READY) {
+                this.StateChange(TaskState.PAUSED);
+            }
+            if (this.getState() == TaskState.EXECUTING) {
+                this.work.pause();
+                this.StateChange(TaskState.PAUSED);
+            }
         }
     }
 
-    public void unpauseTask() 
-    {   synchronized(this.pauseToken){
-        if(pauseToken.isTriggered())
-        this.pauseToken.setTriggered(false);
-        if(this.State==TaskState.PAUSED){
-            this.StateChange(TaskState.READY);
-        }
+    public void unpauseTask() {
+        if (this.isStateChangePossible()) {
+            if (this.getState() == TaskState.PAUSED) {
+                this.StateChange(TaskState.READY);
+            }
         }
     }
 
-    public synchronized boolean addStateSubscriber(StateSubscriber s) {
-        return this.stateChangeSubscribers.add(s);
+    private boolean isStateChangePossible() {
+        synchronized (this.State) {
+            return (this.State != TaskState.FINISHED && this.State != TaskState.CANCELLED);
+        }
     }
 
-    public synchronized boolean removeStateSubscriber(StateSubscriber s) {
-        return this.stateChangeSubscribers.remove(s);
+    public boolean addStateSubscriber(StateSubscriber s) {
+        synchronized (this.stateChangeSubscribers) {
+            return this.stateChangeSubscribers.add(s);
+        }
     }
 
-    public synchronized void onStateChange( TaskState former, TaskState current) {
+    public boolean removeStateSubscriber(StateSubscriber s) {
+        synchronized (this.stateChangeSubscribers) {
+            return this.stateChangeSubscribers.remove(s);
+        }
+    }
+
+    private synchronized void onStateChange(final TaskState former, final TaskState current) {
         for (StateSubscriber s : this.stateChangeSubscribers) {
-            s.Inform(this,former, current);
+            s.Inform(this, former, current);
         }
     }
 
-    private void StateChange(TaskState nextState) {
-        TaskState formmerState = this.State;
-        this.State = nextState;
-        onStateChange(formmerState, nextState);
-    }
+    synchronized void StateChange(TaskState nextState) {
 
-    public boolean Execute(Semaphore schudlerSemaphore) throws InterruptedException {
-        if (this.getState() == TaskState.READY) {
-            schudlerSemaphore.acquire();
-            final Task temp = this;
-            Thread t = new Thread(
-
-                    () -> {
-                        boolean finised = false;
-                        while(!(this.cancelToken.isTriggered()||this.pauseToken.isTriggered())&&!finised)
-                            
-                                finised=this.taskExecution.doInteration();
-
-                            
-                            
-                            
-                        
-                        if (finised)
-                            this.StateChange(TaskState.FINISHED);
-                        else if (this.cancelToken.isTriggered())
-                            this.StateChange(TaskState.CANCELLED);
-                        else 
-                            this.StateChange(TaskState.PAUSED);
-                            
-                        
-                        schudlerSemaphore.release();
-                    });
-            t.start();
-
-            return true;
+        TaskState formerState;
+        synchronized (this.State) {
+            formerState = this.State;
+            this.State = nextState;
+                
         }
-        return false;
+        onStateChange(formerState, nextState);
     }
 
-    
+    public void join() {
+        this.work.join();
+    }
+
+    public void Execute(Semaphore schedulerSemaphore) throws InterruptedException {
+        if (schedulerSemaphore.tryAcquire())
+            synchronized (this) {
+                if (this.getState() == TaskState.READY) {
+                    this.StateChange(TaskState.EXECUTING);
+                    if (this.work.isCreated())
+                        this.work.resume();
+                    else
+                        this.work.Begin(this);
+
+                }
+
+                else
+                    schedulerSemaphore.release();
+            }
+    }
+
+    public void addExecutionTime(long time) {
+        executionTime+=time;
+        if(maxExecutionTime>0&&executionTime>=maxExecutionTime)
+            this.cancelTask();
+    }
 
 }

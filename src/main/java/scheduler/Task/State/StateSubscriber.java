@@ -1,4 +1,6 @@
-package scheduler.Task;
+package scheduler.Task.State;
+
+import scheduler.Task.Task;
 
 public interface StateSubscriber {
     

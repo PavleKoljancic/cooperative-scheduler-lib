@@ -1,6 +1,7 @@
 package scheduler.Task;
 
-public class TaskToken {
+
+class TaskToken {
     private boolean token;
 
     public boolean isTriggered() {
