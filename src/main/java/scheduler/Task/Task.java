@@ -15,13 +15,13 @@ public class Task {
     private long maxExecutionTime;
     private long executionTime;
 
-    public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime) throws Exception {
+    public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime) throws IllegalArgumentException {
 
         this.maxExecutionTime = maxExecutionTime;
         this.executionTime = 0;
 
         if (priority < 0)
-            throw new Exception("Priority must be greater or equal to zero.");
+            throw new IllegalArgumentException("Priority must be greater or equal to zero.");
         this.priority = priority;
         if (wait)
             this.State = TaskState.PAUSED;
@@ -30,7 +30,7 @@ public class Task {
         this.work = work;
     }
 
-    public Task(int priority, boolean wait, TaskWork work) throws Exception {
+    public Task(int priority, boolean wait, TaskWork work) throws IllegalArgumentException {
         this(priority, wait, work, 0);
     }
 
@@ -51,14 +51,13 @@ public class Task {
     public void cancelTask() {
 
         if (this.isStateChangePossible()) {
-            if (this.getState() != TaskState.EXECUTING)
-                this.StateChange(TaskState.CANCELLED);
             this.work.cancelSignal();
+            this.unpauseTask();
         }
     }
 
     public synchronized void pauseTask() throws InterruptedException {
-        if (this.isStateChangePossible()) {
+        if (this.isStateChangePossible()&&!this.work.cancelSignalSent()) {
             if (this.getState() == TaskState.READY) {
                 this.StateChange(TaskState.PAUSED);
             }
@@ -107,7 +106,7 @@ public class Task {
         synchronized (this.State) {
             formerState = this.State;
             this.State = nextState;
-                
+
         }
         onStateChange(formerState, nextState);
     }
@@ -134,9 +133,12 @@ public class Task {
     }
 
     public void addExecutionTime(long time) {
-        executionTime+=time;
-        if(maxExecutionTime>0&&executionTime>=maxExecutionTime)
+        executionTime += time;
+        if (maxExecutionTime > 0 && executionTime >= maxExecutionTime)
             this.cancelTask();
     }
 
+    public Object getResult() {
+        return this.work.Result();
+    }
 }

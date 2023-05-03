@@ -12,7 +12,7 @@ public abstract class TaskWork {
     private boolean created;
     Thread t = null;
 
-    TaskWork() throws InterruptedException {
+    public TaskWork() throws InterruptedException {
         this.cancelToken = new TaskToken(false);
         this.finishSemaphore = new Semaphore(1);
         this.waitSemaphore = new Semaphore(1);
@@ -37,6 +37,11 @@ public abstract class TaskWork {
             this.waitSemaphore.release();
     }
 
+    boolean cancelSignalSent() 
+    {    synchronized (this.cancelToken) {
+        return this.cancelToken.isTriggered();
+        }
+    }
     
     void join() {
 
@@ -64,9 +69,9 @@ public abstract class TaskWork {
                 {  
                     try {
                        this.waitSemaphore.acquire(); 
-                       long time = System.nanoTime();
+                       long time = System.currentTimeMillis();
                        result = this.Work();
-                       time = System.nanoTime()-time;
+                       time = System.currentTimeMillis()-time;
                        this.waitSemaphore.release();
                        
                        myTask.addExecutionTime(time);
@@ -89,5 +94,6 @@ public abstract class TaskWork {
 
     }
     public abstract boolean Work();
+    public abstract Object Result();
 
 }

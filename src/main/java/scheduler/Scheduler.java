@@ -31,14 +31,13 @@ public class Scheduler implements StateSubscriber {
         return result;
     }
 
-    public boolean addTask(Task t, Date executionDate) {
-        Date now = new Date();
-        long difference = executionDate.getTime() - now.getTime();
-        if (difference > 0) {
+    public boolean addTask(Task t, Date startDate) {
+        if(startDate!=null)
             try {
                 t.pauseTask();
                 boolean result = schedulingAlgorithm.add(t);
                 t.addStateSubscriber(this);
+                if(result)
                 timer.schedule(new TimerTask() {
 
                     @Override
@@ -46,16 +45,33 @@ public class Scheduler implements StateSubscriber {
                         t.unpauseTask();
                     }
 
-                }, difference);
+                }, startDate.getTime());
                 return result;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
+        return false;
         }
+    
+    public boolean addTask(Task t, Date startDate, Date EndDate) {
+       
+                Boolean result  = addTask(t, startDate);
+                if(result)
+                timer.schedule(new TimerTask() {
 
-        return addTask(t);
-    }
+                    @Override
+                    public void run() {
+                        if(t.getState()!=TaskState.FINISHED||t.getState()!=TaskState.CANCELLED)
+                            t.cancelTask();
+                    }
+
+                }, EndDate);
+                return  result;
+
+        }
+    
+    
 
     @Override
     public synchronized void Inform(Task task, TaskState former, TaskState current) {
@@ -66,8 +82,11 @@ public class Scheduler implements StateSubscriber {
         if (current == TaskState.READY)
             this.executeNextTask();
         if (current == TaskState.PAUSED)
+        {
             this.schedulingAlgorithm.add(task);
-        if(current==TaskState.FINISHED||current==TaskState.CANCELLED)
+            this.semaphore.release();
+        }
+            if(current==TaskState.FINISHED||current==TaskState.CANCELLED)
         {
             this.semaphore.release();
             this.executeNextTask();

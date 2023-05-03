@@ -6,7 +6,7 @@ import java.util.PriorityQueue;
 import scheduler.Task.Task;
 import scheduler.Task.State.TaskState;
 
-class Priority implements SchedulingAlgorithm {
+public class Priority implements SchedulingAlgorithm {
     //Priority queue nije thread safe
     PriorityQueue<Task> priorityQueue;
 
@@ -17,9 +17,9 @@ class Priority implements SchedulingAlgorithm {
             //Jer je 0 kod mene naj visi prioritet
             @Override
             public int compare(Task arg0, Task arg1) {
-                if(arg0.getPriority()<arg1.getPriority())
-                    return 1;
                 if(arg0.getPriority()>arg1.getPriority())
+                    return 1;
+                if(arg0.getPriority()<arg1.getPriority())
                     return -1;
                 return 0;
             }
