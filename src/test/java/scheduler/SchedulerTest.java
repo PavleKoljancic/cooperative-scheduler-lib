@@ -79,6 +79,38 @@ public class SchedulerTest {
     }
 
     @Test
+    public void joinCancelledTest2() throws Exception {
+        Scheduler scheduler = new Scheduler(new FIFO(4));
+        TaskWork t1 = new TaskWork() {
+
+            int i = 0;
+
+            @Override
+            public boolean Work() {
+                i += 1;
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return i == 10;
+            }
+
+            @Override
+            public Integer Result() {
+                return Integer.valueOf(i);
+
+            }
+        };
+
+        Task task = new Task(0, true, t1);
+
+        scheduler.addTask(task);
+        task.cancelTask();
+        task.join();
+    }
+
+    @Test
     public void noStartTest() throws Exception {
         Scheduler scheduler = new Scheduler(new FIFO(4));
         TaskWork t1 = new TaskWork() {

@@ -25,10 +25,11 @@ public class Scheduler implements StateSubscriber {
     public boolean addTask(Task t) {
 
         boolean result = schedulingAlgorithm.add(t);
-        t.addStateSubscriber(this);
-        if (t.getState() == TaskState.READY)
-            this.executeNextTask();
-
+        if (result) {
+            t.addStateSubscriber(this);
+            if (t.getState().canBeScheduled())
+                this.tryExecutingNextTask();
+        }
         return result;
     }
 
@@ -63,8 +64,8 @@ public class Scheduler implements StateSubscriber {
 
                 @Override
                 public void run() {
-                    if (t.getState() != TaskState.FINISHED || t.getState() != TaskState.CANCELLED)
-                        t.cancelTask();
+                    if (t.getState().isStateChangePossible())
+                            t.cancelTask();
                 }
 
             }, EndDate);
@@ -74,25 +75,34 @@ public class Scheduler implements StateSubscriber {
 
     @Override
     public synchronized void Inform(Task task, TaskState former, TaskState current) {
-
-        if (current == TaskState.PAUSED) {
-            this.schedulingAlgorithm.add(task);
+         //If the former state isn't EXECUTING
+         // then there is no need to release a semaphore
+        if (former == TaskState.EXECUTING) {
+           
+            
+            //If state change is still possible ie 
+            // it is not CANCELED or FINISHED
+            // then it should be readd to the "queue"   
+            if(current.isStateChangePossible())
+                this.schedulingAlgorithm.add(task);
             this.semaphore.release();
+            this.tryExecutingNextTask();
         }
-        if (current == TaskState.FINISHED || current == TaskState.CANCELLED) {
-            this.semaphore.release();
-
-        }
-        this.executeNextTask();
+        //If the former state isn't executing there is no need
+        //to release a semaphore or readd the task to the "queue"
+        //but if it can be scheduled then the scheduler should 
+        //try to execute it.
+        if(current.canBeScheduled())
+            this.tryExecutingNextTask();
     }
 
-    private synchronized void executeNextTask() {
+    private synchronized void tryExecutingNextTask() {
         if (semaphore.availablePermits() > 0)
             try {
                 Task task = schedulingAlgorithm.getNextTask();
                 if (task != null)
                     if (!task.Execute(semaphore))
-                            this.addTask(task);
+                        this.addTask(task);
             } catch (InterruptedException e) {
 
                 e.printStackTrace();

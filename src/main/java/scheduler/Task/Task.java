@@ -30,7 +30,7 @@ public class Task {
             throw new IllegalArgumentException("Priority must be greater or equal to zero.");
         this.priority = priority;
         if (wait)
-            this.State = TaskState.PAUSED;
+            this.State = TaskState.NOTREADY;
         else
             this.State = TaskState.READY;
         this.work = work;
@@ -50,35 +50,54 @@ public class Task {
     }
 
     public TaskState getState() {
-        synchronized (this.State) {
-            return State;
-        }
+
+        return State;
     }
 
     public void cancelTask() {
 
-        if (this.isStateChangePossible()) {
-            this.work.cancelSignal();
-            this.unpauseTask();
+        // If the task isn't already canceled
+        // or finished then it's possible to
+        // cancel the task
+
+        synchronized (this) {
+            if (this.isStateChangePossible()) {
+                // If the task hasn't started execution
+                // It's enough to just change the state to cancel
+                // The scheduler will remove the canceled task
+                // from the queue.
+                if (this.State == TaskState.READY || this.State == TaskState.NOTREADY)
+                    this.StateChange(TaskState.CANCELLED); // problem sa joinom
+                else {
+                    this.work.cancel();
+                }
+            }
         }
     }
 
-    public synchronized void pauseTask() throws InterruptedException {
-        if (this.isStateChangePossible() && !this.work.cancelSignalSent()) {
-            if (this.getState() == TaskState.READY) {
-                this.StateChange(TaskState.PAUSED);
-            }
-            if (this.getState() == TaskState.EXECUTING) {
-                this.work.pause();
-                this.StateChange(TaskState.PAUSED);
+    public void pauseTask() throws InterruptedException {
+        synchronized (this) {
+            if (this.isStateChangePossible()) {
+                if (this.getState() == TaskState.READY) {
+                    this.StateChange(TaskState.NOTREADY);
+                }
+                if (this.getState() == TaskState.EXECUTING) {
+                    this.work.block();
+                    this.StateChange(TaskState.EXECUTIONPAUSED);
+                }
             }
         }
     }
 
     public void unpauseTask() {
-        if (this.isStateChangePossible()) {
-            if (this.getState() == TaskState.PAUSED) {
-                this.StateChange(TaskState.READY);
+        synchronized (this) {
+            if (this.isStateChangePossible()) {
+                if (this.getState() == TaskState.NOTREADY) {
+                    this.StateChange(TaskState.READY);
+                }
+                if (this.getState() == TaskState.EXECUTIONPAUSED) {
+                    this.StateChange(TaskState.WAITING);
+                }
             }
         }
     }
@@ -125,13 +144,14 @@ public class Task {
     public synchronized boolean Execute(Semaphore schedulerSemaphore) throws InterruptedException {
         if (schedulerSemaphore.tryAcquire())
             synchronized (this) {
-                if (this.getState() == TaskState.READY) {
-                    this.StateChange(TaskState.EXECUTING);
+                if (this.getState() == TaskState.READY || this.getState() == TaskState.WAITING) {
+
                     this.timeSliceUsed = 0;
-                    if (this.work.isCreated())
-                        this.work.resume();
-                    else
+                    if (this.getState() == TaskState.READY)
                         this.work.Begin(this);
+                    else if (this.getState() == TaskState.WAITING)
+                        this.work.resume();
+                    this.StateChange(TaskState.EXECUTING);
                     return true;
                 }
 
@@ -141,16 +161,27 @@ public class Task {
         return false;
     }
 
-     void addExecutionTime(long time) {
+    public synchronized void premtiveStop()
+    {
+        synchronized(this) 
+        {   
+            if(this.State==TaskState.EXECUTING)
+            try {
+                this.work.block();
+                this.StateChange(TaskState.WAITING);
+            } catch (InterruptedException e) {
+            }
+
+        }
+    }
+
+    void addExecutionTime(long time) {
         executionTime += time;
         timeSliceUsed += time;
         if (maxExecutionTime > 0 && executionTime >= maxExecutionTime)
             this.cancelTask();
         else if (timeSlice > 0 && timeSliceUsed > timeSlice)
-            try {
-                this.work.pause();
-            } catch (InterruptedException e) {
-            }
+           this.premtiveStop();
     }
 
     public Object getResult() {

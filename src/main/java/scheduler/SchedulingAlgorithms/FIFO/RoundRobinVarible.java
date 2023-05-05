@@ -3,20 +3,26 @@ package scheduler.SchedulingAlgorithms.FIFO;
 import scheduler.Task.Task;
 import scheduler.Task.State.TaskState;
 
-public class RoundRobin extends FIFO{
-    private long timeSlice;
-    public RoundRobin(int capacity,long timeSlice) 
+public class RoundRobinVarible extends FIFO {
+    
+    private long maxTimeSlice;
+    public RoundRobinVarible(int capacity,long maxTimeSlice) 
     {   super(capacity);
-        this.timeSlice = timeSlice;
+        this.maxTimeSlice = maxTimeSlice;
     }
     @Override
     public Task getNextTask() {
         for(Task t: this.concurrentLinkedQueue)
             if(t.getState().canBeScheduled())
             {   this.concurrentLinkedQueue.remove(t);
-                t.setTimeSlice(this.timeSlice);
+                t.setTimeSlice(this.getTimeSlice(t));
                 return t;
             }
         return null;
+    }
+
+    private long getTimeSlice(Task t)
+    {
+        return maxTimeSlice/(t.getPriority()+1);
     }
 }

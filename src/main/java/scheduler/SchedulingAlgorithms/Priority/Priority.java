@@ -38,7 +38,7 @@ public class Priority implements SchedulingAlgorithm {
         while(result==null&&!this.priorityQueue.isEmpty())
         {   
             Task temp = this.priorityQueue.poll();
-            if(temp.getState()==TaskState.READY)
+            if(temp.getState().canBeScheduled())
                 result=temp;
             else
                 set.add(temp);

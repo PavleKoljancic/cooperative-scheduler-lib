@@ -22,7 +22,7 @@ public class FIFO implements SchedulingAlgorithm {
     @Override
     public Task getNextTask() {
         for(Task t: this.concurrentLinkedQueue)
-            if(t.getState()==TaskState.READY)
+            if(t.getState().canBeScheduled())
             {   this.concurrentLinkedQueue.remove(t);
                 return t;
             }
