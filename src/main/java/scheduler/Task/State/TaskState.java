@@ -16,10 +16,5 @@ public enum TaskState {
             return false;
         return true;
     }
-    public boolean isInPausedState()
-    {
-        if(this==TaskState.NOTREADY||this == TaskState.EXECUTIONPAUSED)
-            return true;
-        return false;
-    }
+
 }

@@ -28,51 +28,37 @@ public class Scheduler implements StateSubscriber {
         boolean result = schedulingAlgorithm.add(t);
         if (result) {
             t.addStateSubscriber(this);
+            if(t.getStartDateTime()!=null)
+            {
+                this.timer.schedule(new TimerTask() {
+
+                    @Override
+                    public void run() {
+                        if(t.getState().isStateChangePossible())
+                            t.unpauseTask();    
+                    }
+                    
+                }, t.getStartDateTime());
+            }
+            if(t.getEndDateTime()!=null) 
+            {
+                this.timer.schedule(new TimerTask() {
+
+                    @Override
+                    public void run() {
+                        if(t.getState().isStateChangePossible())
+                            t.cancelTask();    
+                    }
+                    
+                }, t.getEndDateTime());
+            }
             if (t.getState().canBeScheduled())
                 this.tryExecutingNextTask();
         }
         return result;
     }
 
-    public boolean addTask(Task t, Date startDate) {
-        if (startDate != null)
-            try {
-                t.pauseTask();
-                boolean result = schedulingAlgorithm.add(t);
-                t.addStateSubscriber(this);
-                if (result)
-                    timer.schedule(new TimerTask() {
 
-                        @Override
-                        public void run() {
-                            t.unpauseTask();
-                        }
-
-                    }, startDate.getTime());
-                return result;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-        return false;
-    }
-
-    public boolean addTask(Task t, Date startDate, Date EndDate) {
-
-        Boolean result = addTask(t, startDate);
-        if (result)
-            timer.schedule(new TimerTask() {
-
-                @Override
-                public void run() {
-                    if (t.getState().isStateChangePossible())
-                        t.cancelTask();
-                }
-
-            }, EndDate);
-        return result;
-
-    }
 
     @Override
     public synchronized void Inform(Task task, TaskState former, TaskState current) {
@@ -97,8 +83,6 @@ public class Scheduler implements StateSubscriber {
         //If the  current state of  the task is CANCELLED
         // and the former state isn't EXECUTING then the task
         // still in the queue thus it should be removed cause it can never be scheduled 
-        
-
         if (current == TaskState.CANCELLED&& former!=TaskState.EXECUTING)
             this.schedulingAlgorithm.remove(task);
     }

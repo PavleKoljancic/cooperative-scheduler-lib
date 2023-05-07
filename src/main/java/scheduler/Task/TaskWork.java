@@ -1,5 +1,6 @@
 package scheduler.Task;
 
+import java.util.HashSet;
 import java.util.concurrent.Semaphore;
 
 import scheduler.Task.State.TaskState;
@@ -7,17 +8,24 @@ import scheduler.Task.State.TaskState;
 public abstract class TaskWork {
 
     private Semaphore finishSemaphore;
-    private TaskToken cancelToken;
-    private Semaphore waitSemaphore;
+    TaskToken cancelToken;
     private Task myTask;
-    private Thread t = null;
-    private long time1;
+    private HashSet<WorkInstance> workInstances;
+    
 
     public TaskWork() throws InterruptedException {
+        this(1);
+    }
+
+    public TaskWork(int degreeOfParallelism) throws InterruptedException {
+
         this.cancelToken = new TaskToken(false);
         this.finishSemaphore = new Semaphore(1);
-        this.waitSemaphore = new Semaphore(1);
+        this.workInstances = new HashSet<WorkInstance>(degreeOfParallelism);
+        for (int i = 0; i < degreeOfParallelism; i++)
+            this.workInstances.add(new WorkInstance(this));
         this.finishSemaphore.acquire();
+
     }
 
     // Should only be called for tasks that have started execution
@@ -30,7 +38,8 @@ public abstract class TaskWork {
     }
 
     void block() throws InterruptedException {
-        this.waitSemaphore.acquire();
+        for (WorkInstance instance : workInstances)
+            instance.block();
     }
 
     // Calling this method on its on can cause a race condition
@@ -39,8 +48,8 @@ public abstract class TaskWork {
     // method is only called if the task is already created
     // and paused i.e. when its in the EXECUTION PAUSED state
     void resume() {
-        if (waitSemaphore.availablePermits() == 0)
-            this.waitSemaphore.release();
+        for (WorkInstance instance : workInstances)
+            instance.resume();
     }
 
     void finish() {
@@ -57,49 +66,36 @@ public abstract class TaskWork {
             this.finishSemaphore.release();
         }
     }
-    private void updateExecutionTime() {
-        long time2 = System.currentTimeMillis();
-        long timePassed = time2 - this.time1;
-        this.myTask.addExecutionTime(timePassed);
-        this.time1  = time2;
-    }
-    public boolean Check() {
-        if (t == null)
-            throw new IllegalStateException("Check cannot be performed before the tread running has been initialized");
-        this.updateExecutionTime();
-        if (cancelToken.isTriggered())
-            return false;
-        try {
-            this.waitSemaphore.acquire();
-            this.waitSemaphore.release();
-        } catch (InterruptedException e) {
 
-            e.printStackTrace();
+    synchronized void addExecutionTime(long timePassed) {
+        synchronized (this) {
+            this.myTask.addExecutionTime(timePassed);
         }
-        return !cancelToken.isTriggered();
     }
 
-    void Begin(Task myTask) {
-        this.myTask = myTask;
-        if (t == null) {
-            t = new Thread(() -> {
-                this.time1=System.currentTimeMillis();
-                if (this.Work())
-                    this.myTask.StateChange(TaskState.FINISHED);
-                else
-                    this.myTask.StateChange(TaskState.CANCELLED);
-                this.finish();
+    synchronized void updateInstance(WorkInstance workInstance) {
+        workInstances.remove(workInstance);
+        if (this.workInstances.isEmpty()) {
+            if (cancelToken.isTriggered())
+                this.myTask.StateChange(TaskState.CANCELLED);
+            else
+                this.myTask.StateChange(TaskState.FINISHED);
+            this.finish();
 
-            });
-            t.start();
-        } else
-            throw new IllegalStateException("Thread already exists!");
-
+        }
     }
 
-    //Dovoljno je da je samo protected jer se samo poziva unutar ove klase.
-    protected abstract boolean Work();
-    //Mora biti javna da bi Task klasa van ovog paketa imala dostupnost
+    // Dovoljno je da je samo protected jer se samo poziva unutar ove klase.
+    protected abstract void Work(WorkInstance instance);
+
+    // Mora biti javna da bi Task klasa van ovog paketa imala dostupnost
     public abstract Object Result();
+
+    public void Begin(Task task) {
+        this.myTask = task;
+        for (WorkInstance instance : workInstances)
+            instance.Begin();
+
+    }
 
 }

@@ -1,6 +1,7 @@
 package scheduler;
 
 import scheduler.Task.TaskWork;
+import scheduler.Task.WorkInstance;
 
 class TestTaskWorkCounter extends TaskWork {
 
@@ -25,9 +26,15 @@ class TestTaskWorkCounter extends TaskWork {
 
     private int sleep;
 
+
     @Override
-    public boolean Work() {
-        for(;i<max&&this.Check();i++)
+    public Integer Result() {
+        return Integer.valueOf(i);
+
+    }
+    @Override
+    protected void Work(WorkInstance instance) {
+        for(;i<max&&instance.Check();i++)
         {   
             if(!this.name.isEmpty())
                 System.out.println(name + " Iteration:" +(i+1)+".");
@@ -38,13 +45,6 @@ class TestTaskWorkCounter extends TaskWork {
                 e.printStackTrace();
             }
         }
-        return i==max;
-    }
-
-    @Override
-    public Integer Result() {
-        return Integer.valueOf(i);
-
     }
     
 }

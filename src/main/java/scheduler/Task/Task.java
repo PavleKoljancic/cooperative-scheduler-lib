@@ -1,5 +1,6 @@
 package scheduler.Task;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.concurrent.Semaphore;
 
@@ -16,14 +17,16 @@ public class Task {
     private long executionTime;
     private long timeSlice; // If 0 no Limit
     private long timeSliceUsed;
-
+    private Date startDateTime; 
+    private Date endDateTime;
 
     public void setTimeSlice(long timeSlice) {
         this.timeSlice = timeSlice;
     }
 
-    public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime) throws IllegalArgumentException {
-
+    public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime,Date starDateTime, Date endDateTime) throws IllegalArgumentException {
+        this.startDateTime = starDateTime;
+        this.endDateTime = endDateTime;
         this.maxExecutionTime = maxExecutionTime;
         this.executionTime = 0;
 
@@ -39,8 +42,20 @@ public class Task {
     }
 
     public Task(int priority, boolean wait, TaskWork work) throws IllegalArgumentException {
-        this(priority, wait, work, 0);
+        this(priority, wait, work, 0,null,null);
     }
+    public Task(int priority, boolean wait, TaskWork work,long maxExecutionTime) throws IllegalArgumentException {
+        this(priority, wait, work, maxExecutionTime,null,null);
+    }
+
+    public Date getStartDateTime() {
+        return startDateTime;
+    }
+
+    public Date getEndDateTime() {
+        return endDateTime;
+    }
+
 
     public void setPriority(int priority) {
         this.priority = priority;
