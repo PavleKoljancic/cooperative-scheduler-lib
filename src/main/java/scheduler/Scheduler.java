@@ -19,7 +19,8 @@ public class Scheduler implements StateSubscriber {
     Scheduler(SchedulingAlgorithm schedulingAlgorithm) {
         this.schedulingAlgorithm = schedulingAlgorithm;
         semaphore = new Semaphore(schedulingAlgorithm.getCapacity());
-        this.timer = new Timer();
+        this.timer = new Timer(true); // Putting it as Daemon thread so it doesn't stop exit if all other threads are
+                                      // done
     }
 
     public boolean addTask(Task t) {
@@ -65,7 +66,7 @@ public class Scheduler implements StateSubscriber {
                 @Override
                 public void run() {
                     if (t.getState().isStateChangePossible())
-                            t.cancelTask();
+                        t.cancelTask();
                 }
 
             }, EndDate);
@@ -75,25 +76,31 @@ public class Scheduler implements StateSubscriber {
 
     @Override
     public synchronized void Inform(Task task, TaskState former, TaskState current) {
-         //If the former state isn't EXECUTING
-         // then there is no need to release a semaphore
+        // If the former state isn't EXECUTING
+        // then there is no need to release a semaphore
         if (former == TaskState.EXECUTING) {
-           
-            
-            //If state change is still possible ie 
+
+            // If state change is still possible ie
             // it is not CANCELED or FINISHED
-            // then it should be readd to the "queue"   
-            if(current.isStateChangePossible())
+            // then it should be readd to the "queue"
+            if (current.isStateChangePossible())
                 this.schedulingAlgorithm.add(task);
             this.semaphore.release();
             this.tryExecutingNextTask();
         }
-        //If the former state isn't executing there is no need
-        //to release a semaphore or readd the task to the "queue"
-        //but if it can be scheduled then the scheduler should 
-        //try to execute it.
-        if(current.canBeScheduled())
+        // If the former state isn't executing there is no need
+        // to release a semaphore or readd the task to the "queue"
+        // but if it can be scheduled then the scheduler should
+        // try to execute it.
+        if (current.canBeScheduled())
             this.tryExecutingNextTask();
+        //If the  current state of  the task is CANCELLED
+        // and the former state isn't EXECUTING then the task
+        // still in the queue thus it should be removed cause it can never be scheduled 
+        
+
+        if (current == TaskState.CANCELLED&& former!=TaskState.EXECUTING)
+            this.schedulingAlgorithm.remove(task);
     }
 
     private synchronized void tryExecutingNextTask() {

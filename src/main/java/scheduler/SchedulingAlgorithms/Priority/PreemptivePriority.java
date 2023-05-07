@@ -19,23 +19,26 @@ public class PreemptivePriority extends Priority implements StateSubscriber {
     public boolean add(Task t) {
         synchronized (this) {
             boolean result = this.priorityQueue.add(t);
-            if (result && t.getState().canBeScheduled() && this.executingTasksSet.size() == this.capacity) {
+            if(result){
+                t.addStateSubscriber(this);
+            if (t.getState().canBeScheduled() && this.executingTasksSet.size() == this.capacity) {
                 Task max = null;
                 for (Task temp : this.executingTasksSet)
                     if (max == null || max.getPriority() < temp.getPriority())
                         max = temp;
                 if (max != null && t.getPriority() < max.getPriority())
-                    max.premtiveStop();
-            }
+                    max.preemptiveStop();
+            } }
             return result;
-        }
-    }
+        }}
+    
 
     @Override
     public void Inform(Task task, TaskState former, TaskState current) {
+        synchronized(this){
         if (former == TaskState.EXECUTING)
             this.executingTasksSet.remove(task);
         if (current == TaskState.EXECUTING)
-            this.executingTasksSet.add(task);
+            this.executingTasksSet.add(task);}
     }
 }

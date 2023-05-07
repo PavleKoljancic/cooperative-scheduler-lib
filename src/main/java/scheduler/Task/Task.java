@@ -17,6 +17,7 @@ public class Task {
     private long timeSlice; // If 0 no Limit
     private long timeSliceUsed;
 
+
     public void setTimeSlice(long timeSlice) {
         this.timeSlice = timeSlice;
     }
@@ -61,23 +62,31 @@ public class Task {
         // cancel the task
 
         synchronized (this) {
-            if (this.isStateChangePossible()) {
+            if (this.State.isStateChangePossible()) {
                 // If the task hasn't started execution
-                // It's enough to just change the state to cancel
+                // It's enough to just change the state to CANCELLED
                 // The scheduler will remove the canceled task
                 // from the queue.
-                if (this.State == TaskState.READY || this.State == TaskState.NOTREADY)
-                    this.StateChange(TaskState.CANCELLED); // problem sa joinom
-                else {
+                if (this.State == TaskState.READY || this.State == TaskState.NOTREADY) {
+                    this.StateChange(TaskState.CANCELLED);
+                    this.work.finish();
+                } else {
+
                     this.work.cancel();
+
                 }
             }
         }
     }
 
+
+    //No need to synchronize the method cause the entire object
+    //is synchronized thus no race condition can occur.
+    //Based on the state the task is in it performs  a block
+    // if in the EXECUTING state and preforms the proper state change
     public void pauseTask() throws InterruptedException {
         synchronized (this) {
-            if (this.isStateChangePossible()) {
+            if (this.State.isStateChangePossible()) {
                 if (this.getState() == TaskState.READY) {
                     this.StateChange(TaskState.NOTREADY);
                 }
@@ -85,13 +94,17 @@ public class Task {
                     this.work.block();
                     this.StateChange(TaskState.EXECUTIONPAUSED);
                 }
+                if (this.getState() == TaskState.WAITING) {
+                    this.StateChange(TaskState.EXECUTIONPAUSED);
+                }
             }
         }
     }
-
+    //Znaci ovo ne odblokira istinski zadtak nego samo prebacuje iz stanja u kojima
+    // ga rasporedjivac nemoze rasporediti u stanju u kojima ga rasporedjivac moze rasporediti
     public void unpauseTask() {
         synchronized (this) {
-            if (this.isStateChangePossible()) {
+            if (this.State.isStateChangePossible()) {
                 if (this.getState() == TaskState.NOTREADY) {
                     this.StateChange(TaskState.READY);
                 }
@@ -102,11 +115,7 @@ public class Task {
         }
     }
 
-    private boolean isStateChangePossible() {
-        synchronized (this.State) {
-            return (this.State != TaskState.FINISHED && this.State != TaskState.CANCELLED);
-        }
-    }
+
 
     public boolean addStateSubscriber(StateSubscriber s) {
         synchronized (this.stateChangeSubscribers) {
@@ -141,11 +150,13 @@ public class Task {
         this.work.join();
     }
 
+
+    //Nelagoda mi je sto je ova metoda javana :(
     public synchronized boolean Execute(Semaphore schedulerSemaphore) throws InterruptedException {
         if (schedulerSemaphore.tryAcquire())
             synchronized (this) {
                 if (this.getState() == TaskState.READY || this.getState() == TaskState.WAITING) {
-
+                    //Ovdje se timeSlice used resetuje svaki put kada zadatak ponovo bude rasporedjen.
                     this.timeSliceUsed = 0;
                     if (this.getState() == TaskState.READY)
                         this.work.Begin(this);
@@ -161,16 +172,14 @@ public class Task {
         return false;
     }
 
-    public synchronized void premtiveStop()
-    {
-        synchronized(this) 
-        {   
-            if(this.State==TaskState.EXECUTING)
-            try {
-                this.work.block();
-                this.StateChange(TaskState.WAITING);
-            } catch (InterruptedException e) {
-            }
+    public synchronized void preemptiveStop() {
+        synchronized (this) {
+            if (this.State == TaskState.EXECUTING)
+                try {
+                    this.work.block();
+                    this.StateChange(TaskState.WAITING);
+                } catch (InterruptedException e) {
+                }
 
         }
     }
@@ -181,10 +190,12 @@ public class Task {
         if (maxExecutionTime > 0 && executionTime >= maxExecutionTime)
             this.cancelTask();
         else if (timeSlice > 0 && timeSliceUsed > timeSlice)
-           this.premtiveStop();
+            this.preemptiveStop();
     }
 
     public Object getResult() {
         return this.work.Result();
     }
+
+
 }

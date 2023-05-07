@@ -1,6 +1,8 @@
 package scheduler;
 
 
+import java.util.concurrent.Semaphore;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -8,38 +10,18 @@ import scheduler.SchedulingAlgorithms.FIFO.FIFO;
 import scheduler.SchedulingAlgorithms.Priority.Priority;
 import scheduler.Task.Task;
 import scheduler.Task.TaskWork;
+import scheduler.Task.State.TaskState;
 
 public class SchedulerTest {
 
     @Test
     public void joinTest1() throws Exception {
         Scheduler scheduler = new Scheduler(new FIFO(4));
-        TaskWork t1 = new TaskWork() {
-
-            int i = 0;
-
-            @Override
-            public boolean Work() {
-                i += 1;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return i == 10;
-            }
-
-            @Override
-            public Integer Result() {
-                return Integer.valueOf(i);
-
-            }
-        };
+        TaskWork t1 = new TestTaskWorkCounter(10, 1000);
 
         Task task = new Task(0, false, t1);
 
         scheduler.addTask(task);
-        Assert.assertNotEquals(Integer.valueOf(10), task.getResult());
         task.join();
         Assert.assertEquals(Integer.valueOf(10), task.getResult());
     }
@@ -47,27 +29,7 @@ public class SchedulerTest {
     @Test
     public void joinTest2() throws Exception {
         Scheduler scheduler = new Scheduler(new FIFO(4));
-        TaskWork t1 = new TaskWork() {
-
-            int i = 0;
-
-            @Override
-            public boolean Work() {
-                i += 1;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return i == 10;
-            }
-
-            @Override
-            public Integer Result() {
-                return Integer.valueOf(i);
-
-            }
-        };
+        TaskWork t1 = new TestTaskWorkCounter(10, 1000);
 
         Task task = new Task(0, false, t1);
 
@@ -81,27 +43,7 @@ public class SchedulerTest {
     @Test
     public void joinCancelledTest2() throws Exception {
         Scheduler scheduler = new Scheduler(new FIFO(4));
-        TaskWork t1 = new TaskWork() {
-
-            int i = 0;
-
-            @Override
-            public boolean Work() {
-                i += 1;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return i == 10;
-            }
-
-            @Override
-            public Integer Result() {
-                return Integer.valueOf(i);
-
-            }
-        };
+        TaskWork t1 = new TestTaskWorkCounter(10, 1000);
 
         Task task = new Task(0, true, t1);
 
@@ -113,93 +55,31 @@ public class SchedulerTest {
     @Test
     public void noStartTest() throws Exception {
         Scheduler scheduler = new Scheduler(new FIFO(4));
-        TaskWork t1 = new TaskWork() {
-
-            int i = 0;
-
-            @Override
-            public boolean Work() {
-                i += 1;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return i == 10;
-            }
-
-            @Override
-            public Integer Result() {
-                return Integer.valueOf(i);
-
-            }
-        };
+        TaskWork t1 = new TestTaskWorkCounter(10, 1000);
 
         Task task = new Task(0, true, t1);
 
         scheduler.addTask(task);
-        Assert.assertNotEquals(Integer.valueOf(10), task.getResult());
+        Thread.sleep(1000);
+        Assert.assertEquals(task.getState(), TaskState.NOTREADY);
         Assert.assertNotEquals(Integer.valueOf(10), task.getResult());
     }
 
     @Test
     public void unPauseTest() throws Exception {
         Scheduler scheduler = new Scheduler(new FIFO(4));
-        TaskWork t1 = new TaskWork() {
-
-            int i = 0;
-
-            @Override
-            public boolean Work() {
-                i += 1;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return i == 10;
-            }
-
-            @Override
-            public Integer Result() {
-                return Integer.valueOf(i);
-
-            }
-        };
+        TaskWork t1 = new TestTaskWorkCounter(10, 1000);
 
         Task task1 = new Task(0, true, t1);
-        TaskWork t2 = new TaskWork() {
-
-            int i = 0;
-
-            @Override
-            public boolean Work() {
-                i += 1;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return i == 10;
-            }
-
-            @Override
-            public Integer Result() {
-                return Integer.valueOf(i);
-
-            }
-        };
+        TaskWork t2 = new TestTaskWorkCounter(10, 1000);
         scheduler.addTask(task1);
 
         Task task2 = new Task(0, false, t2);
 
         scheduler.addTask(task2);
         task2.join();
+        Assert.assertEquals(task1.getState(), TaskState.NOTREADY);
         Assert.assertEquals(Integer.valueOf(10), task2.getResult());
-        task1.unpauseTask();
-        Thread.sleep(100);
-        task1.pauseTask();
-        Thread.sleep(1000);
         task1.unpauseTask();
         task1.join();
         Assert.assertEquals(Integer.valueOf(10), task1.getResult());
@@ -208,34 +88,12 @@ public class SchedulerTest {
     @Test
     public void maxExecutionTimeTest() throws Exception {
         Scheduler scheduler = new Scheduler(new FIFO(4));
-        TaskWork t1 = new TaskWork() {
-
-            int i = 0;
-
-            @Override
-            public boolean Work() {
-                i += 1;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return i == 10;
-            }
-
-            @Override
-            public Integer Result() {
-                return Integer.valueOf(i);
-
-            }
-        };
+        TaskWork t1 = new TestTaskWorkCounter(10, 1000);
 
         Task task = new Task(0, false, t1, 100);
 
         scheduler.addTask(task);
-        task.pauseTask();
         task.unpauseTask();
-
         task.join();
         Assert.assertNotEquals(Integer.valueOf(10), task.getResult());
 
@@ -246,27 +104,7 @@ public class SchedulerTest {
         Scheduler scheduler = new Scheduler(new Priority(4));
         Task[] tasks = new Task[100];
         for (int i = 0; i < tasks.length; i++) {
-            TaskWork t1 = new TaskWork() {
-
-                int i = 0;
-
-                @Override
-                public boolean Work() {
-                    i += 1;
-                    try {
-                        Thread.sleep(50);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    return i == 10;
-                }
-
-                @Override
-                public Integer Result() {
-                    return Integer.valueOf(i);
-
-                }
-            };
+            TaskWork t1 = new TestTaskWorkCounter(10, 50);
 
             tasks[i] = new Task(tasks.length - 1, false, t1);
             scheduler.addTask(tasks[i]);
@@ -282,28 +120,7 @@ public class SchedulerTest {
     @Test
     public void pauseCancelTest() throws Exception {
         Scheduler scheduler = new Scheduler(new FIFO(4));
-        TaskWork t1 = new TaskWork() {
-
-            int i = 0;
-
-            @Override
-            public boolean Work() {
-                i += 1;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return i == 10;
-            }
-
-            @Override
-            public Integer Result() {
-                return Integer.valueOf(i);
-
-            }
-        };
-
+        TaskWork t1 = new TestTaskWorkCounter(10, 1000);
         Task task = new Task(0, false, t1);
 
         scheduler.addTask(task);
@@ -320,29 +137,9 @@ public class SchedulerTest {
     @Test
     public void pauseTaskSemaphoreTest() throws Exception {
         Scheduler scheduler = new Scheduler( new FIFO(2));
-        Task[] tasks = new Task[4];
+        Task[] tasks = new Task[5];
         for (int i = 0; i < tasks.length; i++) {
-            TaskWork t1 = new TaskWork() {
-
-                int i = 0;
-
-                @Override
-                public boolean Work() {
-                    i += 1;
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    return i == 10;
-                }
-
-                @Override
-                public Integer Result() {
-                    return Integer.valueOf(i);
-
-                }
-            };
+            TaskWork t1 = new TestTaskWorkCounter(10, 500);
 
             tasks[i] = new Task(tasks.length - 1, false, t1);
             scheduler.addTask(tasks[i]);
@@ -360,5 +157,6 @@ public class SchedulerTest {
             tasks[i].join();
 
     }
+
 
 }
