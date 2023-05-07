@@ -1,7 +1,6 @@
 package scheduler.SchedulingAlgorithms;
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import scheduler.SchedulingAlgorithms.FIFO.FIFO;

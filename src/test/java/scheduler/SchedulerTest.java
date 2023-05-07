@@ -1,8 +1,5 @@
 package scheduler;
 
-
-import java.util.concurrent.Semaphore;
-
 import org.junit.Assert;
 import org.junit.Test;
 
