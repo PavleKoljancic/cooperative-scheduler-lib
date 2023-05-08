@@ -6,7 +6,7 @@ import java.util.PriorityQueue;
 
 import scheduler.SchedulingAlgorithms.SchedulingAlgorithm;
 import scheduler.Task.Task;
-import scheduler.Task.State.TaskState;
+
 
 public class Priority implements SchedulingAlgorithm {
     //Priority queue nije thread safe

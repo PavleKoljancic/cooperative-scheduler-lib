@@ -1,6 +1,4 @@
 package scheduler;
-
-import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
@@ -87,6 +85,11 @@ public class Scheduler implements StateSubscriber {
             this.schedulingAlgorithm.remove(task);
     }
 
+
+    //Tries executing next task if there are any available permit's
+    //If there are available permits then it tries to get the 
+    //next task from the scheduling algorithm 
+    //If any  are available then it tries to execute it  
     private synchronized void tryExecutingNextTask() {
         if (semaphore.availablePermits() > 0)
             try {

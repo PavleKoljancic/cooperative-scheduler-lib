@@ -20,6 +20,8 @@ public class Task {
     private Date startDateTime; 
     private Date endDateTime;
 
+
+    //Sets the time slice alloted to this task 
     public void setTimeSlice(long timeSlice) {
         this.timeSlice = timeSlice;
     }
@@ -74,19 +76,28 @@ public class Task {
 
         // If the task isn't already canceled
         // or finished then it's possible to
-        // cancel the task
+        // cancel the task.
 
         synchronized (this) {
             if (this.State.isStateChangePossible()) {
                 // If the task hasn't started execution
                 // It's enough to just change the state to CANCELLED
                 // The scheduler will remove the canceled task
-                // from the queue.
+                // from the queue and release the finish semaphore
                 if (this.State == TaskState.READY || this.State == TaskState.NOTREADY) {
                     this.StateChange(TaskState.CANCELLED);
                     this.work.finish();
                 } else {
-
+                    
+                    //If the task has started execution i.e. it is
+                    // in the EXECUTING EXECUTIONPAUSED or WAITING state
+                    // then the task has to be cancelled by calling the
+                    // task works execution method so that it can set the 
+                    // cancel trigger and unblock any waiting threads.
+                    // Due to the implementation there is no grantee 
+                    // such as in the previous case that cancellation
+                    // as this is up to the proper implementation of 
+                    // the cooperative mechanisms  
                     this.work.cancel();
 
                 }
@@ -95,10 +106,17 @@ public class Task {
     }
 
 
+     //If state change is not possible meaning that 
+    // the state of the task is already FINISHED or CANCELLED
+    // then nothing happens.
     //No need to synchronize the method cause the entire object
     //is synchronized thus no race condition can occur.
-    //Based on the state the task is in it performs  a block
-    // if in the EXECUTING state and preforms the proper state change
+   
+    //If the task is in the EXECUTING state it performs a block
+    //and then the necessary state change.
+    //Otherwise it just performs the necessary state change as 
+    //the task is either already blocked or it never started execution. 
+    
     public void pauseTask() throws InterruptedException {
         synchronized (this) {
             if (this.State.isStateChangePossible()) {
@@ -115,8 +133,15 @@ public class Task {
             }
         }
     }
-    //Znaci ovo ne odblokira istinski zadtak nego samo prebacuje iz stanja u kojima
-    // ga rasporedjivac nemoze rasporediti u stanju u kojima ga rasporedjivac moze rasporediti
+    //If state change is not possible meaning that 
+    // the state of the task is already FINISHED or CANCELLED
+    // then nothing happens.
+    // If state change is possible and the task is in one of the 
+    // 2 paused states then it switches it to an Schedulable state
+    // It should be noted that no unblocking of the task if its 
+    // blocked occurs here this state change is transparent to 
+    // the task work and is only of use to the scheduler.
+    
     public void unpauseTask() {
         synchronized (this) {
             if (this.State.isStateChangePossible()) {
@@ -150,6 +175,9 @@ public class Task {
         }
     }
 
+
+    //Method that performs a change of state and calls the onStateChange method
+    // so that all state subscribers can be informed about the change.
     synchronized void StateChange(TaskState nextState) {
 
         TaskState formerState;
@@ -160,13 +188,24 @@ public class Task {
         }
         onStateChange(formerState, nextState);
     }
-
+    //Blocking method that waits the the underlying semaphore 
+    // of the work task is not released.
     public void join() {
         this.work.join();
     }
 
 
-    //Nelagoda mi je sto je ova metoda javana :(
+    //Tries acquire the schedulers semaphore
+    //if it fails it returns false.
+    //If it successfully acquires the schedulers semaphore
+    //It checks if the task is in a schedulable state
+    //meaning that the task has to be in the READY or WAITING state
+    //If its not in schedulable state it releases the schedulers
+    //semaphore 
+    //If the task is in a schedulable state it changes the tasks state to EXECUTING and then
+    // performs either
+    //resume or begin based on the  current state of the task.
+    //The schedulers semaphore gets released when the task changes state
     public synchronized boolean Execute(Semaphore schedulerSemaphore) throws InterruptedException {
         if (schedulerSemaphore.tryAcquire())
             synchronized (this) {
@@ -187,6 +226,9 @@ public class Task {
         return false;
     }
 
+
+    //Performs a block and proper state change if 
+    //the task is in the EXECUTING state.
     public synchronized void preemptiveStop() {
         synchronized (this) {
             if (this.State == TaskState.EXECUTING)
@@ -199,6 +241,9 @@ public class Task {
         }
     }
 
+    //Updates the time used by the task.
+    //And performs cancellation or 
+    // a preemptive stop if needed
     void addExecutionTime(long time) {
         executionTime += time;
         timeSliceUsed += time;
