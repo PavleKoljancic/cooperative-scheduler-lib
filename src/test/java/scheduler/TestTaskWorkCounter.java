@@ -1,9 +1,12 @@
 package scheduler;
 
+import scheduler.SchedulingAlgorithms.FIFO.RoundRobinVarible;
+import scheduler.SchedulingAlgorithms.Priority.PreemptivePriority;
+import scheduler.SchedulingAlgorithms.Priority.Priority;
 import scheduler.Task.TaskWork;
 import scheduler.Task.WorkInstance;
 
-class TestTaskWorkCounter extends TaskWork {
+public class TestTaskWorkCounter extends TaskWork {
 
     public TestTaskWorkCounter(int max, int sleep,String name) throws InterruptedException {
         super();
@@ -41,10 +44,12 @@ class TestTaskWorkCounter extends TaskWork {
             try {
                 Thread.sleep(sleep);
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
+
                 e.printStackTrace();
             }
         }
     }
+
+   
     
 }

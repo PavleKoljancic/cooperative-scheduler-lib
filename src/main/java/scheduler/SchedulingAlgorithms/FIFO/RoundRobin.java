@@ -2,7 +2,6 @@ package scheduler.SchedulingAlgorithms.FIFO;
 
 import scheduler.Task.Task;
 
-
 public class RoundRobin extends FIFO{
     private long timeSlice;
     public RoundRobin(int capacity,long timeSlice) 

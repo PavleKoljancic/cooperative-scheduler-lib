@@ -36,9 +36,9 @@ public class PreemptivePriority extends Priority implements StateSubscriber {
     @Override
     public void Inform(Task task, TaskState former, TaskState current) {
         synchronized(this){
-        if (former == TaskState.EXECUTING)
+        if (former.isExecutingState())
             this.executingTasksSet.remove(task);
-        if (current == TaskState.EXECUTING)
+        if (current.isExecutingState())
             this.executingTasksSet.add(task);}
     }
 }

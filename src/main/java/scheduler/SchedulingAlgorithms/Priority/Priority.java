@@ -4,8 +4,8 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 
-import scheduler.SchedulingAlgorithms.SchedulingAlgorithm;
 import scheduler.Task.Task;
+import scheduler.SchedulingAlgorithms.SchedulingAlgorithm;
 
 
 public class Priority implements SchedulingAlgorithm {

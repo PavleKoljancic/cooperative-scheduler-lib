@@ -1,13 +1,18 @@
 package scheduler.SchedulingAlgorithms;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Assert;
 import org.junit.Test;
 
+import scheduler.Scheduler;
+import scheduler.Task.Task;
+import scheduler.Task.State.TaskState;
+import scheduler.TestTaskWorkCounter;
 import scheduler.SchedulingAlgorithms.FIFO.FIFO;
 import scheduler.SchedulingAlgorithms.FIFO.RoundRobin;
 import scheduler.SchedulingAlgorithms.FIFO.RoundRobinVarible;
+import scheduler.SchedulingAlgorithms.Priority.PreemptivePriority;
 import scheduler.SchedulingAlgorithms.Priority.Priority;
-import scheduler.Task.Task;
 public class SchedulingAlgorithmsTest {
     
     @Test
@@ -71,5 +76,22 @@ public class SchedulingAlgorithmsTest {
             assertEquals(current,tasks[i]);
             assertEquals(6000/(current.getPriority()+1),current.getTimeSlice());
         }
+    }
+    @Test
+    public void PreemptivePriorityTest() throws IllegalArgumentException, InterruptedException
+    {
+        Scheduler scheduler = new Scheduler(new PreemptivePriority(1) );
+        Task pajo = new Task(2, false, new TestTaskWorkCounter(20, 1000,"Pajo"), 0);
+
+        Task aco = new Task(1, false, new TestTaskWorkCounter(20, 1000,"Aco"), 0);
+
+        Task pero = new Task(0, false, new TestTaskWorkCounter(10, 1000,"Pero"), 0);
+        scheduler.addTask(pajo);
+        Thread.sleep(1000);
+        scheduler.addTask(aco);
+        Thread.sleep(2000);
+        scheduler.addTask(pero);
+        pero.join();
+        Assert.assertTrue(pajo.getState().canBeScheduled()&&aco.getState()!=TaskState.FINISHED);
     }
 }

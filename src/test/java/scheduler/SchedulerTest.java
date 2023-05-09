@@ -62,7 +62,7 @@ public class SchedulerTest {
 
         scheduler.addTask(task);
         Thread.sleep(1000);
-        Assert.assertEquals(task.getState(), TaskState.READYPAUSED);
+        Assert.assertEquals(task.getState(), TaskState.READY_PAUSED);
         Assert.assertNotEquals(Integer.valueOf(10), task.getResult());
     }
 
@@ -79,7 +79,7 @@ public class SchedulerTest {
 
         scheduler.addTask(task2);
         task2.join();
-        Assert.assertEquals(task1.getState(), TaskState.READYPAUSED);
+        Assert.assertEquals(task1.getState(), TaskState.READY_PAUSED);
         Assert.assertEquals(Integer.valueOf(10), task2.getResult());
         task1.unpauseTask();
         task1.join();
@@ -168,7 +168,7 @@ public class SchedulerTest {
         Task t1 = new Task(0, true, new TestTaskWorkCounter(10, 1000, ""), 0, starDate, null);
         scheduler.addTask(t1);
         Thread.sleep(1000*10);
-        Assert.assertNotEquals(TaskState.READYPAUSED, t1.getState());
+        Assert.assertNotEquals(TaskState.READY_PAUSED, t1.getState());
         t1.join();
     }
 

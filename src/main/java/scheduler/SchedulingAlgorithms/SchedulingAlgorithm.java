@@ -1,6 +1,5 @@
 package scheduler.SchedulingAlgorithms;
 
-
 import scheduler.Task.Task;
 
 public interface SchedulingAlgorithm {
