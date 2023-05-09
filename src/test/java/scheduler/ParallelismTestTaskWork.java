@@ -50,4 +50,9 @@ public class ParallelismTestTaskWork extends TaskWork{
         Scheduler scheduler = new Scheduler(new FIFO(1));
         scheduler.addTask(new Task(0, false, new ParallelismTestTaskWork(12, 50, 1000), 0));
     }
+    @Override
+    public String[] getArgs() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
+    }
 }

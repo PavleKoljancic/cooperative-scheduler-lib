@@ -47,5 +47,11 @@ public class TestTaskWorkResources extends TaskWork {
         return null;
 
     }
+
+    @Override
+    public String[] getArgs() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
+    }
     
 }

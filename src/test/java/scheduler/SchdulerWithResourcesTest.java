@@ -121,6 +121,12 @@ public class SchdulerWithResourcesTest {
                 return temp;
             }
 
+            @Override
+            public String[] getArgs() {
+                // TODO Auto-generated method stub
+                throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
+            }
+
         }, 0);
         scheduler.addTask(t1);
         t1.join();
@@ -162,6 +168,12 @@ public class SchdulerWithResourcesTest {
                 return temp;
             }
 
+            @Override
+            public String[] getArgs() {
+                // TODO Auto-generated method stub
+                throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
+            }
+
         }, 0);
         scheduler.addTask(t1);
         t1.join();
@@ -195,6 +207,12 @@ public class SchdulerWithResourcesTest {
             @Override
             public Object Result() {
                 return lockedResources;
+            }
+
+            @Override
+            public String[] getArgs() {
+                // TODO Auto-generated method stub
+                throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
             }
 
         }, 0);
@@ -241,7 +259,7 @@ public class SchdulerWithResourcesTest {
         Task t2 = new Task(5, false, new TestTaskWorkResources(t2Resources), 0);
         scheduler.addTask(t2);
         Assert.assertEquals(TaskState.EXECUTING_WITH_RESOURCES, t1.getState());
-        t1.cancelTask();
+        t1.cancelTask("By user");
         Thread.sleep(10000);
         Assert.assertEquals(TaskState.CANCELLED, t1.getState());
         Assert.assertEquals(TaskState.EXECUTING_WITH_RESOURCES, t2.getState());
