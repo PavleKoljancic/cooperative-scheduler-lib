@@ -12,7 +12,7 @@ public class ResourceRequest {
 
 public ResourceRequest(Task requester, HashSet<String> resources) {
         this.requester = requester;
-        this.resources = resources;
+        this.resources = new HashSet<String>(resources);
         this.originalPriority = requester.getPriority();
         this.hasResources = false;
     }

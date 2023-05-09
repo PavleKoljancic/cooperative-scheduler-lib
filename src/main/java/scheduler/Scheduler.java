@@ -1,8 +1,10 @@
 package scheduler;
+
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
 
+import scheduler.Resources.ResourceHandler;
 import scheduler.SchedulingAlgorithms.SchedulingAlgorithm;
 import scheduler.Task.Task;
 import scheduler.Task.State.StateSubscriber;
@@ -13,41 +15,41 @@ public class Scheduler implements StateSubscriber {
     private Semaphore semaphore;
     private SchedulingAlgorithm schedulingAlgorithm;
     private Timer timer;
+    private ResourceHandler resourceHandler;
 
     public Scheduler(SchedulingAlgorithm schedulingAlgorithm) {
         this.schedulingAlgorithm = schedulingAlgorithm;
         semaphore = new Semaphore(schedulingAlgorithm.getCapacity());
         this.timer = new Timer(true); // Putting it as Daemon thread so it doesn't stop exit if all other threads are
                                       // done
+        this.resourceHandler = new ResourceHandler();
     }
 
     public boolean addTask(Task t) {
-
+        t.setMyResourceHandler(resourceHandler);
         boolean result = schedulingAlgorithm.add(t);
         if (result) {
             t.addStateSubscriber(this);
-            if(t.getStartDateTime()!=null)
-            {
+            if (t.getStartDateTime() != null) {
                 this.timer.schedule(new TimerTask() {
 
                     @Override
                     public void run() {
-                        if(t.getState().isStateChangePossible())
-                            t.unpauseTask();    
+                        if (t.getState().isStateChangePossible())
+                            t.unpauseTask();
                     }
-                    
+
                 }, t.getStartDateTime());
             }
-            if(t.getEndDateTime()!=null) 
-            {
+            if (t.getEndDateTime() != null) {
                 this.timer.schedule(new TimerTask() {
 
                     @Override
                     public void run() {
-                        if(t.getState().isStateChangePossible())
-                            t.cancelTask();    
+                        if (t.getState().isStateChangePossible())
+                            t.cancelTask();
                     }
-                    
+
                 }, t.getEndDateTime());
             }
             if (t.getState().canBeScheduled())
@@ -55,8 +57,6 @@ public class Scheduler implements StateSubscriber {
         }
         return result;
     }
-
-
 
     @Override
     public synchronized void Inform(Task task, TaskState former, TaskState current) {
@@ -78,18 +78,17 @@ public class Scheduler implements StateSubscriber {
         // try to execute it.
         if (current.canBeScheduled())
             this.tryExecutingNextTask();
-        //If the  current state of  the task is CANCELLED
+        // If the current state of the task is CANCELLED
         // and the former state isn't EXECUTING then the task
-        // still in the queue thus it should be removed cause it can never be scheduled 
-        if (current == TaskState.CANCELLED&& former!=TaskState.EXECUTING)
+        // still in the queue thus it should be removed cause it can never be scheduled
+        if (current == TaskState.CANCELLED && former != TaskState.EXECUTING)
             this.schedulingAlgorithm.remove(task);
     }
 
-
-    //Tries executing next task if there are any available permit's
-    //If there are available permits then it tries to get the 
-    //next task from the scheduling algorithm 
-    //If any  are available then it tries to execute it  
+    // Tries executing next task if there are any available permit's
+    // If there are available permits then it tries to get the
+    // next task from the scheduling algorithm
+    // If any are available then it tries to execute it
     private synchronized void tryExecutingNextTask() {
         if (semaphore.availablePermits() > 0)
             try {
@@ -102,7 +101,5 @@ public class Scheduler implements StateSubscriber {
                 e.printStackTrace();
             }
     }
-
-
 
 }

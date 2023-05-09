@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 
-import scheduler.Scheduler;
 import scheduler.Task.Task;
 
 public class ResourceHandler {
@@ -15,7 +14,7 @@ public class ResourceHandler {
     private HashMap<Task, ResourceRequest> TaskToRequestMap;
 
 
-    public ResourceHandler(Scheduler myScheduler) {
+    public ResourceHandler() {
 
         this.gratedRequests = new HashSet<ResourceRequest>();
         this.waitingRequests = new PriorityQueue<ResourceRequest>(new Comparator<ResourceRequest>() {
@@ -67,13 +66,12 @@ public class ResourceHandler {
 
                     else {
                         this.waitingRequests.add(newRequest);
-                        // Ovdje promjena stanja neophodna.
                         this.priorityInheritance(newRequest, overlappingRequests);
 
                         try {
                             newRequest.getRequester().waitingForResources(this);
                         } catch (InterruptedException e) {
-                            // TODO Auto-generated catch block
+
                             e.printStackTrace();
                         }
 
@@ -100,7 +98,7 @@ public class ResourceHandler {
     private void grantRequest(ResourceRequest requestToGrant) {
         requestToGrant.gainedResources();
         this.gratedRequests.add(requestToGrant);
-        requestToGrant.getRequester().rescorcesGranted(this);
+        requestToGrant.getRequester().resourcesGranted(this);
     }
 
     public synchronized boolean hasLockedResources(Task task) {
@@ -127,14 +125,14 @@ public class ResourceHandler {
             this.TaskToRequestMap.remove(holder, request);
             this.gratedRequests.remove(request);
             request.getRequester().setPriority(request.getOriginalPriority());
-            // Ovdje promjena stanja neophodna
+            request.getRequester().resourcesReleased(this);
             HashSet<ResourceRequest> readd = new HashSet<ResourceRequest>();
             while(!this.waitingRequests.isEmpty()) 
             {
                 ResourceRequest temp = this.waitingRequests.poll();
                 HashSet<ResourceRequest> overlapping =  this.getOverlappingRequests(temp.getResources());
                 if(overlapping.size()==0)
-                    this.grantRequest(request);
+                    this.grantRequest(temp);
                 else readd.add(temp);
             }
             this.waitingRequests.addAll(readd);

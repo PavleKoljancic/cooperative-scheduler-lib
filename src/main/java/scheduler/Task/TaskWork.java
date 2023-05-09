@@ -3,15 +3,17 @@ package scheduler.Task;
 import java.util.HashSet;
 import java.util.concurrent.Semaphore;
 
+import scheduler.Resources.ResourceHandler;
 import scheduler.Task.State.TaskState;
 
 public abstract class TaskWork {
 
     private Semaphore finishSemaphore;
     TaskToken cancelToken;
-    private Task myTask;
+    protected Task myTask;
     private HashSet<WorkInstance> workInstances;
     private int degreeOfParallelism;
+    protected ResourceHandler myResourceHandler;
     
 
     public int getDegreeOfParallelism() {
@@ -85,16 +87,21 @@ public abstract class TaskWork {
     //If a work instance has ended either by finishing or being
     //canceled this method is automatically called by the work instance.
     //It removes the workInstance from the set of work instances.
-    //If the set of work instances is empty it does the proper state change
+    //If the set of work instances is empty it checks if the task had any resources
+    // and releases them the proper state change
     // based on if the cancelTrigger was set.
+
     synchronized void updateInstance(WorkInstance workInstance) {
         synchronized(this.workInstances){
         workInstances.remove(workInstance);
         if (this.workInstances.isEmpty()) {
+            if(this.myResourceHandler.hasLockedResources(myTask))
+                this.myResourceHandler.releaseResources(myTask);
             if (cancelToken.isTriggered())
                 this.myTask.StateChange(TaskState.CANCELLED);
             else
                 this.myTask.StateChange(TaskState.FINISHED);
+        
             this.finish();
 
         }}
@@ -110,6 +117,7 @@ public abstract class TaskWork {
         synchronized(this.workInstances) 
         {
         this.myTask = task;
+        this.myResourceHandler = task.getMyResourceHandler();
         for (WorkInstance instance : workInstances)
             instance.Begin();
         }

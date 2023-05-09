@@ -18,8 +18,12 @@ public class Task {
     private long executionTime;
     private ResourceHandler myResourceHandler = null;
 
+    ResourceHandler getMyResourceHandler() {
+        return myResourceHandler;
+    }
+
     public void setMyResourceHandler(ResourceHandler myResourceHandler) {
-        if (this.myResourceHandler == null)
+        if (this.myResourceHandler != null)
             throw new IllegalStateException("The resource handler of a task cannot be changed ");
         this.myResourceHandler = myResourceHandler;
     }
@@ -106,8 +110,7 @@ public class Task {
                     this.work.finish();
                 } else {
 
-                    // If the task has started execution i.e. it is
-                    // in the EXECUTING EXECUTIONPAUSED or WAITING state
+                    // If the task has started execution 
                     // then the task has to be cancelled by calling the
                     // task works execution method so that it can set the
                     // cancel trigger and unblock any waiting threads.
@@ -287,10 +290,10 @@ public class Task {
         return this.work.Result();
     }
 
-    public void rescorcesGranted(ResourceHandler resourceHandler) {
+    public void resourcesGranted(ResourceHandler resourceHandler) {
         if (resourceHandler == this.myResourceHandler) {
             synchronized (this) {
-                if (this.State.canBeScheduled()) {
+                if (this.State.isStateChangePossible()) {
                     if (this.State == TaskState.EXECUTING)
                         this.StateChange(TaskState.EXECUTING_WITH_RESOURCES);
                     else
@@ -303,10 +306,22 @@ public class Task {
     public void waitingForResources(ResourceHandler resourceHandler) throws InterruptedException {
         if (resourceHandler == this.myResourceHandler) {
             synchronized (this) {
-                if (this.State.canBeScheduled()) {
+                if (this.State.isStateChangePossible()) {
                     if (this.State == TaskState.EXECUTING)
                         this.work.block();
                     this.StateChange(TaskState.WAITING_FOR_RESOURCES);
+                }
+            }
+        }
+    }
+
+    public void resourcesReleased(ResourceHandler resourceHandler) {
+        if (resourceHandler == this.myResourceHandler) {
+            synchronized (this) {
+                if (this.State.isStateChangePossible()) {
+                    if(this.State==TaskState.EXECUTING_WITH_RESOURCES)
+                        this.StateChange(TaskState.EXECUTING);
+                    else throw new IllegalStateException("State when releasing resources must be EXECUTING.");
                 }
             }
         }
