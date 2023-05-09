@@ -25,7 +25,7 @@ public class WorkInstance {
         long time2 = System.currentTimeMillis();
         long timePassed = time2 - this.time1;
         this.myTaskWork.addExecutionTime(timePassed);
-        this.time1  = time2;
+
     }
     public boolean Check() {
         if (t == null)
@@ -36,9 +36,15 @@ public class WorkInstance {
         try {
             this.waitSemaphore.acquire();
             this.waitSemaphore.release();
+        
         } catch (InterruptedException e) {
 
             e.printStackTrace();
+        }
+        finally{
+            //time1 is here set again because if the task was blocked we don't want to count the time in the blok
+            this.time1  = System.currentTimeMillis(); 
+
         }
         return !this.myTaskWork.cancelToken.isTriggered();
     }

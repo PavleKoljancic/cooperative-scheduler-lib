@@ -164,11 +164,11 @@ public class SchedulerTest {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
         Date now = new Date();
 
-        Date starDate =  new Date (now.getTime()+10*1000); // 10 seconds from now;
+        Date starDate =  new Date (now.getTime()+5*1000); // 5 seconds from now;
         Task t1 = new Task(0, true, new TestTaskWorkCounter(10, 1000, ""), 0, starDate, null);
         scheduler.addTask(t1);
         Thread.sleep(1000*10);
-        Assert.assertNotEquals(TaskState.READY, t1.getResult());
+        Assert.assertNotEquals(TaskState.READYPAUSED, t1.getState());
         t1.join();
     }
 
@@ -180,12 +180,33 @@ public class SchedulerTest {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
         Date now = new Date();
 
-        Date starDate =  new Date (now.getTime()+10*1000); // 10 seconds from now;
-        Task t1 = new Task(0, false, new TestTaskWorkCounter(20, 1000, ""), 0, starDate, null);
+        Date endDate =  new Date (now.getTime()+5*1000); // 5 seconds from now;
+        Task t1 = new Task(0, false, new TestTaskWorkCounter(20, 1000, ""), 0, null, endDate);
         scheduler.addTask(t1);
         Thread.sleep(1000*10);
-        Assert.assertNotEquals(TaskState.CANCELLED, t1.getResult());
+        Assert.assertEquals(TaskState.CANCELLED, t1.getState());
         t1.join();
+    }
+
+    @Test
+    public void executionTimeTest() throws IllegalArgumentException, InterruptedException
+    {
+
+        Scheduler scheduler = new Scheduler( new FIFO(2));
+        Task t1 = new Task(0, true, new TestTaskWorkCounter(20, 1000, ""), 0, null, null);
+        scheduler.addTask(t1);
+        Thread.sleep(1000);
+        Assert.assertEquals(0, t1.getExecutionTime());
+        t1.unpauseTask();
+        Thread.sleep(7000);
+        t1.pauseTask();
+        long currentExecutionTime = t1.getExecutionTime();
+        Thread.sleep(7000);
+        t1.unpauseTask();
+        Thread.sleep(1000);
+        t1.pauseTask();
+        Assert.assertTrue(currentExecutionTime+7000>t1.getExecutionTime());
+        
     }
 
 }

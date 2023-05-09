@@ -1,7 +1,7 @@
 package scheduler.SchedulingAlgorithms.FIFO;
 
 import scheduler.Task.Task;
-import scheduler.Task.State.TaskState;
+
 
 public class RoundRobinVarible extends FIFO {
     

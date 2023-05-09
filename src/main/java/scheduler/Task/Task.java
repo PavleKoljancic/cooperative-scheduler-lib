@@ -15,6 +15,10 @@ public class Task {
     private HashSet<StateSubscriber> stateChangeSubscribers = new HashSet<>();
     private long maxExecutionTime; // If 0 no limit
     private long executionTime;
+    public long getExecutionTime() {
+        return executionTime;
+    }
+
     private long timeSlice; // If 0 no Limit
     private long timeSliceUsed;
     private Date startDateTime; 
