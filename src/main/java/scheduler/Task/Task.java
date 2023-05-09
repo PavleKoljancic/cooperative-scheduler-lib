@@ -72,6 +72,7 @@ public class Task {
 
     public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime, Date starDateTime, Date endDateTime, String TaskName)
             throws IllegalArgumentException {
+            this.progress = 0;
         this.TaskName = TaskName;
         this.startDateTime = starDateTime;
         this.endDateTime = endDateTime;
