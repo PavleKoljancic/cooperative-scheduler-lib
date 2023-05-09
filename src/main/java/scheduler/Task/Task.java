@@ -13,7 +13,7 @@ public class Task {
     private TaskState State;
     private String TaskName;
     private TaskWork work;
-    private HashSet<StateSubscriber> stateChangeSubscribers = new HashSet<>();
+    private HashSet<StateSubscriber> stateChangeSubscribers = new HashSet<StateSubscriber>();
     private long maxExecutionTime; // If 0 no limit
     private long executionTime;
     private ResourceHandler myResourceHandler = null;
@@ -22,6 +22,23 @@ public class Task {
     private long timeSliceUsed;
     private Date startDateTime;
     private Date endDateTime;
+    private HashSet<DataChangeSubscriber> dataChangeSubscribers = new HashSet<DataChangeSubscriber>();
+    public long getMaxExecutionTime() {
+        return maxExecutionTime;
+    }
+
+    private double progress;
+    void addProgress(double add) 
+    {
+        if(this.progress+add>1.0)
+            this.progress = 1.0;
+        else this.progress+=add;
+        this.onDataChange(false, true, false);
+    }
+    public double getProgress() {
+        return progress;
+    }
+
     public String getTaskName() {
         return TaskName;
     }
@@ -90,6 +107,7 @@ public class Task {
 
     public void setPriority(int priority) {
         this.priority = priority;
+        this.onDataChange(true, false, false);
     }
 
     public int getPriority() {
@@ -203,6 +221,24 @@ public class Task {
         }
     }
 
+        public boolean addDataChangeSubscriber(DataChangeSubscriber s) {
+        synchronized (this.dataChangeSubscribers) {
+            return this.dataChangeSubscribers.add(s);
+        }
+    }
+
+    public boolean removeDataChangeSubscriber(DataChangeSubscriber s) {
+        synchronized (this.dataChangeSubscribers) {
+            return this.dataChangeSubscribers.remove(s);
+        }
+    }
+
+    private synchronized void onDataChange(boolean priorityChanged, boolean progressChanged, boolean executionTimeChanged) {
+        for (DataChangeSubscriber s : this.dataChangeSubscribers) {
+            s.Inform(priorityChanged,progressChanged,executionTimeChanged);
+        }
+    }
+
     // Method that performs a change of state and calls the onStateChange method
     // so that all state subscribers can be informed about the change.
     synchronized void StateChange(TaskState nextState) {
@@ -293,6 +329,7 @@ public class Task {
             this.cancelTask("Canceled by scheduler execution time is all used up.");
         else if (timeSlice > 0 && timeSliceUsed > timeSlice)
             this.preemptiveStop();
+        this.onDataChange(false, false, true);
     }
 
     public Object getResult() {
