@@ -122,5 +122,7 @@ public abstract class TaskWork {
             instance.Begin();
         }
     }
+    //This method should return a String Array of arguments which the task work can take.
+    public abstract String [] getArgs();
 
 }

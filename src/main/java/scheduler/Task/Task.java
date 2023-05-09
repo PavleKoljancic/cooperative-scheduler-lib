@@ -11,13 +11,24 @@ import scheduler.Task.State.TaskState;
 public class Task {
     private int priority;
     private TaskState State;
-
+    private String TaskName;
     private TaskWork work;
     private HashSet<StateSubscriber> stateChangeSubscribers = new HashSet<>();
     private long maxExecutionTime; // If 0 no limit
     private long executionTime;
     private ResourceHandler myResourceHandler = null;
+    private String cancelComment ="";
+    private long timeSlice; // If 0 no Limit
+    private long timeSliceUsed;
+    private Date startDateTime;
+    private Date endDateTime;
+    public String getTaskName() {
+        return TaskName;
+    }
 
+    public String getCancelComment() {
+        return cancelComment;
+    }
     ResourceHandler getMyResourceHandler() {
         return myResourceHandler;
     }
@@ -32,10 +43,6 @@ public class Task {
         return executionTime;
     }
 
-    private long timeSlice; // If 0 no Limit
-    private long timeSliceUsed;
-    private Date startDateTime;
-    private Date endDateTime;
 
     // Sets the time slice alloted to this task
     public void setTimeSlice(long timeSlice) {
@@ -46,8 +53,9 @@ public class Task {
         return this.timeSlice;
     }
 
-    public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime, Date starDateTime, Date endDateTime)
+    public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime, Date starDateTime, Date endDateTime, String TaskName)
             throws IllegalArgumentException {
+        this.TaskName = TaskName;
         this.startDateTime = starDateTime;
         this.endDateTime = endDateTime;
         this.maxExecutionTime = maxExecutionTime;
@@ -65,11 +73,11 @@ public class Task {
     }
 
     public Task(int priority, boolean wait, TaskWork work) throws IllegalArgumentException {
-        this(priority, wait, work, 0, null, null);
+        this(priority, wait, work, 0, null, null, "Unnamed task");
     }
 
     public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime) throws IllegalArgumentException {
-        this(priority, wait, work, maxExecutionTime, null, null);
+        this(priority, wait, work, maxExecutionTime, null, null,"Unnamed task");
     }
 
     public Date getStartDateTime() {
@@ -93,14 +101,15 @@ public class Task {
         return State;
     }
 
-    public void cancelTask() {
-
+    public void cancelTask(String Comment) {
+       
         // If the task isn't already canceled
         // or finished then it's possible to
         // cancel the task.
 
         synchronized (this) {
             if (this.State.isStateChangePossible()) {
+                this.cancelComment= Comment;
                 // If the task hasn't started execution
                 // It's enough to just change the state to CANCELLED
                 // The scheduler will remove the canceled task
@@ -281,7 +290,7 @@ public class Task {
         timeSliceUsed += time;
 
         if (maxExecutionTime > 0 && executionTime >= maxExecutionTime)
-            this.cancelTask();
+            this.cancelTask("Canceled by scheduler execution time is all used up.");
         else if (timeSlice > 0 && timeSliceUsed > timeSlice)
             this.preemptiveStop();
     }

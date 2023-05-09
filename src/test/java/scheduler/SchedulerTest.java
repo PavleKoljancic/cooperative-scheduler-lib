@@ -36,7 +36,7 @@ public class SchedulerTest {
 
         scheduler.addTask(task);
         Assert.assertNotEquals(Integer.valueOf(10), task.getResult());
-        task.cancelTask();
+        task.cancelTask("");
         task.join();
         Assert.assertNotEquals(Integer.valueOf(10), task.getResult());
     }
@@ -49,7 +49,7 @@ public class SchedulerTest {
         Task task = new Task(0, true, t1);
 
         scheduler.addTask(task);
-        task.cancelTask();
+        task.cancelTask("");
         task.join();
     }
 
@@ -127,7 +127,7 @@ public class SchedulerTest {
         scheduler.addTask(task);
         Thread.sleep(500);
         task.pauseTask();
-        task.cancelTask();
+        task.cancelTask("");
         task.join();
 
     }
@@ -165,7 +165,7 @@ public class SchedulerTest {
         Date now = new Date();
 
         Date starDate =  new Date (now.getTime()+5*1000); // 5 seconds from now;
-        Task t1 = new Task(0, true, new TestTaskWorkCounter(10, 1000, ""), 0, starDate, null);
+        Task t1 = new Task(0, true, new TestTaskWorkCounter(10, 1000, ""), 0, starDate, null,"");
         scheduler.addTask(t1);
         Thread.sleep(1000*10);
         Assert.assertNotEquals(TaskState.READY_PAUSED, t1.getState());
@@ -181,7 +181,7 @@ public class SchedulerTest {
         Date now = new Date();
 
         Date endDate =  new Date (now.getTime()+5*1000); // 5 seconds from now;
-        Task t1 = new Task(0, false, new TestTaskWorkCounter(20, 1000, ""), 0, null, endDate);
+        Task t1 = new Task(0, false, new TestTaskWorkCounter(20, 1000, ""), 0, null, endDate,"");
         scheduler.addTask(t1);
         Thread.sleep(1000*10);
         Assert.assertEquals(TaskState.CANCELLED, t1.getState());
@@ -193,7 +193,7 @@ public class SchedulerTest {
     {
 
         Scheduler scheduler = new Scheduler( new FIFO(2));
-        Task t1 = new Task(0, true, new TestTaskWorkCounter(20, 1000, ""), 0, null, null);
+        Task t1 = new Task(0, true, new TestTaskWorkCounter(20, 1000, ""), 0, null, null,"");
         scheduler.addTask(t1);
         Thread.sleep(1000);
         Assert.assertEquals(0, t1.getExecutionTime());

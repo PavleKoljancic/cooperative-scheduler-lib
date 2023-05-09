@@ -47,7 +47,7 @@ public class Scheduler implements StateSubscriber {
                     @Override
                     public void run() {
                         if (t.getState().isStateChangePossible())
-                            t.cancelTask();
+                            t.cancelTask("Cancelled by timer due date passed.");
                     }
 
                 }, t.getEndDateTime());
