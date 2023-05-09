@@ -1,7 +1,7 @@
 package scheduler.Task.State;
 
 public enum TaskState {
-    READY,EXECUTING,WAITING,NOTREADY,EXECUTIONPAUSED,FINISHED,CANCELLED;
+    READY,EXECUTING,WAITING,READYPAUSED,EXECUTIONPAUSED,FINISHED,CANCELLED;
 
     public boolean canBeScheduled()
     {

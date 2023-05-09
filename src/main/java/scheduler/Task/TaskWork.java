@@ -88,6 +88,7 @@ public abstract class TaskWork {
     //If the set of work instances is empty it does the proper state change
     // based on if the cancelTrigger was set.
     synchronized void updateInstance(WorkInstance workInstance) {
+        synchronized(this.workInstances){
         workInstances.remove(workInstance);
         if (this.workInstances.isEmpty()) {
             if (cancelToken.isTriggered())
@@ -96,7 +97,7 @@ public abstract class TaskWork {
                 this.myTask.StateChange(TaskState.FINISHED);
             this.finish();
 
-        }
+        }}
     }
 
 
@@ -106,10 +107,12 @@ public abstract class TaskWork {
     public abstract Object Result();
 
     public void Begin(Task task) {
+        synchronized(this.workInstances) 
+        {
         this.myTask = task;
         for (WorkInstance instance : workInstances)
             instance.Begin();
-
+        }
     }
 
 }

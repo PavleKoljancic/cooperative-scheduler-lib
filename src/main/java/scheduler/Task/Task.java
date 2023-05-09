@@ -25,6 +25,9 @@ public class Task {
     public void setTimeSlice(long timeSlice) {
         this.timeSlice = timeSlice;
     }
+    public long getTimeSlice() {
+        return this.timeSlice;
+    }
 
     public Task(int priority, boolean wait, TaskWork work, long maxExecutionTime,Date starDateTime, Date endDateTime) throws IllegalArgumentException {
         this.startDateTime = starDateTime;
@@ -36,7 +39,7 @@ public class Task {
             throw new IllegalArgumentException("Priority must be greater or equal to zero.");
         this.priority = priority;
         if (wait)
-            this.State = TaskState.NOTREADY;
+            this.State = TaskState.READYPAUSED;
         else
             this.State = TaskState.READY;
         this.work = work;
@@ -84,7 +87,7 @@ public class Task {
                 // It's enough to just change the state to CANCELLED
                 // The scheduler will remove the canceled task
                 // from the queue and release the finish semaphore
-                if (this.State == TaskState.READY || this.State == TaskState.NOTREADY) {
+                if (this.State == TaskState.READY || this.State == TaskState.READYPAUSED) {
                     this.StateChange(TaskState.CANCELLED);
                     this.work.finish();
                 } else {
@@ -121,7 +124,7 @@ public class Task {
         synchronized (this) {
             if (this.State.isStateChangePossible()) {
                 if (this.getState() == TaskState.READY) {
-                    this.StateChange(TaskState.NOTREADY);
+                    this.StateChange(TaskState.READYPAUSED);
                 }
                 if (this.getState() == TaskState.EXECUTING) {
                     this.work.block();
@@ -145,7 +148,7 @@ public class Task {
     public void unpauseTask() {
         synchronized (this) {
             if (this.State.isStateChangePossible()) {
-                if (this.getState() == TaskState.NOTREADY) {
+                if (this.getState() == TaskState.READYPAUSED) {
                     this.StateChange(TaskState.READY);
                 }
                 if (this.getState() == TaskState.EXECUTIONPAUSED) {

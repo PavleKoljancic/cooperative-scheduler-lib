@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import scheduler.SchedulingAlgorithms.FIFO.FIFO;
+import scheduler.SchedulingAlgorithms.FIFO.RoundRobin;
+import scheduler.SchedulingAlgorithms.FIFO.RoundRobinVarible;
 import scheduler.SchedulingAlgorithms.Priority.Priority;
 import scheduler.Task.Task;
 public class SchedulingAlgorithmsTest {
@@ -35,5 +37,39 @@ public class SchedulingAlgorithmsTest {
         for(int i=0;i<tasks.length;i++)
             assertEquals(priority.getNextTask(),tasks[tasks.length-i-1]);
 
+    }
+    @Test
+    public void RoundRobinTest()
+    {
+
+        Task [] tasks = new Task[20];
+        FIFO fifo = new RoundRobin(5, 6000);
+        for(int i=0;i<tasks.length;i++)
+            {tasks[i] = new Task(i, false, null);
+             fifo.add(tasks[i]);
+            }
+        for(int i=0;i<tasks.length;i++)
+        {   
+            Task current = fifo.getNextTask();
+            assertEquals(current,tasks[i]);
+            assertEquals(6000,current.getTimeSlice());
+        }
+    }
+    @Test
+    public void RoundRobinVairableTest()
+    {
+
+        Task [] tasks = new Task[20];
+        FIFO fifo = new RoundRobinVarible(5, 6000);
+        for(int i=0;i<tasks.length;i++)
+            {tasks[i] = new Task(i, false, null);
+             fifo.add(tasks[i]);
+            }
+        for(int i=0;i<tasks.length;i++)
+        {   
+            Task current = fifo.getNextTask();
+            assertEquals(current,tasks[i]);
+            assertEquals(6000/(current.getPriority()+1),current.getTimeSlice());
+        }
     }
 }

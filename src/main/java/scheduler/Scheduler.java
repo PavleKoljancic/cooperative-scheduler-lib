@@ -14,7 +14,7 @@ public class Scheduler implements StateSubscriber {
     private SchedulingAlgorithm schedulingAlgorithm;
     private Timer timer;
 
-    Scheduler(SchedulingAlgorithm schedulingAlgorithm) {
+    public Scheduler(SchedulingAlgorithm schedulingAlgorithm) {
         this.schedulingAlgorithm = schedulingAlgorithm;
         semaphore = new Semaphore(schedulingAlgorithm.getCapacity());
         this.timer = new Timer(true); // Putting it as Daemon thread so it doesn't stop exit if all other threads are

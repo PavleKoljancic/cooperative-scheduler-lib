@@ -1,5 +1,9 @@
 package scheduler;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,7 +62,7 @@ public class SchedulerTest {
 
         scheduler.addTask(task);
         Thread.sleep(1000);
-        Assert.assertEquals(task.getState(), TaskState.NOTREADY);
+        Assert.assertEquals(task.getState(), TaskState.READYPAUSED);
         Assert.assertNotEquals(Integer.valueOf(10), task.getResult());
     }
 
@@ -75,7 +79,7 @@ public class SchedulerTest {
 
         scheduler.addTask(task2);
         task2.join();
-        Assert.assertEquals(task1.getState(), TaskState.NOTREADY);
+        Assert.assertEquals(task1.getState(), TaskState.READYPAUSED);
         Assert.assertEquals(Integer.valueOf(10), task2.getResult());
         task1.unpauseTask();
         task1.join();
@@ -128,9 +132,6 @@ public class SchedulerTest {
 
     }
 
-    // Znaci ovdje hocu da dodaam vise taskova nego sto scheduler dozvoljava
-    // pa onda da ih sve pauziram i dodoam novi u ready stanju
-    // te da vidim hoce li ga ovaj rasporediti
     @Test
     public void pauseTaskSemaphoreTest() throws Exception {
         Scheduler scheduler = new Scheduler( new FIFO(2));
@@ -155,5 +156,36 @@ public class SchedulerTest {
 
     }
 
+    @Test
+    public void startDateTimeTest() throws IllegalArgumentException, InterruptedException
+    {
+
+        Scheduler scheduler = new Scheduler( new FIFO(2));
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+        Date now = new Date();
+
+        Date starDate =  new Date (now.getTime()+10*1000); // 10 seconds from now;
+        Task t1 = new Task(0, true, new TestTaskWorkCounter(10, 1000, ""), 0, starDate, null);
+        scheduler.addTask(t1);
+        Thread.sleep(1000*10);
+        Assert.assertNotEquals(TaskState.READY, t1.getResult());
+        t1.join();
+    }
+
+    @Test
+    public void endDateTimeTest() throws IllegalArgumentException, InterruptedException
+    {
+
+        Scheduler scheduler = new Scheduler( new FIFO(2));
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+        Date now = new Date();
+
+        Date starDate =  new Date (now.getTime()+10*1000); // 10 seconds from now;
+        Task t1 = new Task(0, false, new TestTaskWorkCounter(20, 1000, ""), 0, starDate, null);
+        scheduler.addTask(t1);
+        Thread.sleep(1000*10);
+        Assert.assertNotEquals(TaskState.CANCELLED, t1.getResult());
+        t1.join();
+    }
 
 }
