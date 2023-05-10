@@ -64,7 +64,6 @@ public abstract class TaskWork {
     //Releases the finish semaphore in the 
     //that was acquired in the constructor of this object.
     void finish() {
-        this.finishSemaphore.release();
     }
 
     void join() {
@@ -111,6 +110,7 @@ public abstract class TaskWork {
     protected abstract void Work(WorkInstance instance);
 
 
+
     public abstract Object Result();
 
     public void Begin(Task task) {
@@ -122,7 +122,7 @@ public abstract class TaskWork {
             instance.Begin();
         }
     }
-    //This method should return a String Array of arguments which the task work can take.
-    public abstract String [] getArgs();
+
+
 
 }

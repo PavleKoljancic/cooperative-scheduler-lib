@@ -121,11 +121,7 @@ public class SchdulerWithResourcesTest {
                 return temp;
             }
 
-            @Override
-            public String[] getArgs() {
-                // TODO Auto-generated method stub
-                throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
-            }
+
 
         }, 0);
         scheduler.addTask(t1);
@@ -168,11 +164,7 @@ public class SchdulerWithResourcesTest {
                 return temp;
             }
 
-            @Override
-            public String[] getArgs() {
-                // TODO Auto-generated method stub
-                throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
-            }
+
 
         }, 0);
         scheduler.addTask(t1);
@@ -209,11 +201,7 @@ public class SchdulerWithResourcesTest {
                 return lockedResources;
             }
 
-            @Override
-            public String[] getArgs() {
-                // TODO Auto-generated method stub
-                throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
-            }
+     
 
         }, 0);
         scheduler.addTask(t1);

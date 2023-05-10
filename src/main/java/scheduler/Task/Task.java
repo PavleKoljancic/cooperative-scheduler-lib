@@ -28,7 +28,7 @@ public class Task {
     }
 
     private double progress;
-   public void addProgress(double add) 
+   public synchronized void addProgress(double add) 
     {
         if(this.progress+add>1.0)
             this.progress = 1.0;
@@ -217,9 +217,10 @@ public class Task {
     }
 
     private synchronized void onStateChange(final TaskState former, final TaskState current) {
+        synchronized (this.stateChangeSubscribers) {
         for (StateSubscriber s : this.stateChangeSubscribers) {
             s.Inform(this, former, current);
-        }
+        }}
     }
 
         public boolean addDataChangeSubscriber(DataChangeSubscriber s) {
@@ -235,9 +236,10 @@ public class Task {
     }
 
     private synchronized void onDataChange(boolean priorityChanged, boolean progressChanged, boolean executionTimeChanged) {
+        synchronized (this.dataChangeSubscribers) {
         for (DataChangeSubscriber s : this.dataChangeSubscribers) {
             s.Inform(priorityChanged,progressChanged,executionTimeChanged);
-        }
+        }}
     }
 
     // Method that performs a change of state and calls the onStateChange method

@@ -49,11 +49,7 @@ public class TestTaskWorkCounter extends TaskWork {
             }
         }
     }
-    @Override
-    public String[] getArgs() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getArgs'");
-    }
+
 
    
     
