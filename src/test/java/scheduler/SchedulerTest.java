@@ -177,7 +177,8 @@ public class SchedulerTest {
     {
 
         Scheduler scheduler = new Scheduler( new FIFO(2));
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+
+        
         Date now = new Date();
 
         Date endDate =  new Date (now.getTime()+5*1000); // 5 seconds from now;

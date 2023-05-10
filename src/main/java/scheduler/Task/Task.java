@@ -28,7 +28,7 @@ public class Task {
     }
 
     private double progress;
-    void addProgress(double add) 
+   public void addProgress(double add) 
     {
         if(this.progress+add>1.0)
             this.progress = 1.0;
